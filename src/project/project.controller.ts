@@ -1,0 +1,60 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ProjectService } from './project.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { ProjectStatus } from './schemas/project.schema';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { UserRole } from '../user/schemas/user.schema';
+
+@Controller('projects')
+export class ProjectController {
+  constructor(private readonly projectService: ProjectService) {}
+
+  @Post()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
+    return this.projectService.create(createProjectDto, req.user._id);
+  }
+
+  @Get()
+  findAll(@Query('status') status?: ProjectStatus) {
+    return this.projectService.findAll(status);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.projectService.findOne(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  update(
+    @Param('id') id: string,
+    @Body() updateProjectDto: UpdateProjectDto,
+    @Request() req,
+  ) {
+    return this.projectService.update(id, updateProjectDto, req.user._id);
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  remove(@Param('id') id: string, @Request() req) {
+    return this.projectService.remove(id, req.user._id);
+  }
+}
