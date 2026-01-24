@@ -12,7 +12,6 @@ import { UserModule } from './user/user.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
-import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -46,7 +45,6 @@ import { UploadModule } from './upload/upload.module';
     JoinRequestModule,
     PaymentModule,
     BannerModule,
-    UploadModule,
   ],
   controllers: [AppController],
   providers:[AppService]
