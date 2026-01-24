@@ -52,22 +52,15 @@ export class User extends Document {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+UserSchema.pre('save', async function () {
+  if (!this.isModified('password')) {
+    return;
+  }
 
-// Hash password before saving
-import type { CallbackWithoutResultAndOptionalError } from 'mongoose';
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
 
-UserSchema.pre(
-  'save',
-  async function (this: any, next: CallbackWithoutResultAndOptionalError) {
-    if (!this.isModified('password')) {
-      return next();
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  },
-);
 
 // Method to compare password
 UserSchema.methods.comparePassword = async function (
