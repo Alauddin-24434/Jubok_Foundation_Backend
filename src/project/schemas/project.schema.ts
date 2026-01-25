@@ -57,20 +57,6 @@ export class Project extends Document {
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
 
-// Middleware to update status based on dates
-ProjectSchema.pre('save', function (next: Function) {
-  const now = new Date();
-
-  if (this.startDate > now) {
-    this.status = ProjectStatus.UPCOMING;
-  } else if (this.endDate < now) {
-    this.status = ProjectStatus.EXPIRED;
-  } else {
-    this.status = ProjectStatus.ONGOING;
-  }
-
-  next();
-});
 
 // Index for efficient queries
 ProjectSchema.index({ status: 1, startDate: -1 });
