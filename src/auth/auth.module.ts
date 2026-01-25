@@ -10,6 +10,7 @@ import { AuthController } from './auth.controller';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { User, UserSchema } from '../user/schemas/user.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { StatsModule } from '../stats/stats.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
     ]),
+    StatsModule,
   ],
   controllers: [AuthController],
   providers: [

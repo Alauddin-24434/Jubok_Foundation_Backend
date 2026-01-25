@@ -13,6 +13,10 @@ export class CreateBannerDto {
 
   @IsNotEmpty()
   @IsString()
+  description: string;
+
+  @IsNotEmpty()
+  @IsString()
   image: string;
 
   @IsNotEmpty()

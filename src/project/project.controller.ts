@@ -33,8 +33,8 @@ export class ProjectController {
   }
 
   @Get()
-  findAll(@Query('status') status?: ProjectStatus) {
-    return this.projectService.findAll(status);
+  findAll(@Query() query: any) {
+    return this.projectService.findAll(query);
   }
 
   @Get(':id')

@@ -14,6 +14,7 @@ import {
 import type { Request, Response } from 'express';
 
 import { AuthService } from './auth.service';
+import { StatsService } from '../stats/stats.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -26,7 +27,10 @@ export interface JwtUser {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly statsService: StatsService,
+  ) {}
 
   /* ================= REGISTER ================= */
   @Post('register')
@@ -117,5 +121,16 @@ export class AuthController {
         accessToken: accessToken,
       },
     };
+  }
+
+  /* ================= STATS ================= */
+  @Get('stats')
+  @UseGuards(JwtAuthGuard)
+  async getStats(@ReqDecorator() req: any) {
+    const user = req.user;
+    if (user.role === 'SuperAdmin' || user.role === 'Admin') {
+      return this.statsService.getAdminStats();
+    }
+    return this.statsService.getUserStats(user._id);
   }
 }

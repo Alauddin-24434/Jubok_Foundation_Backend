@@ -29,12 +29,18 @@ export class Project extends Document {
 
   @Prop({ required: true })
   endDate: Date;
-
+  // 🎯 Target
   @Prop({ required: true })
-  amount: number;
+  targetAmount: number;
+  // 💰 Collected
+  @Prop({ default: 0 })
+  raisedAmount: number;
 
   @Prop({ default: '' })
   notice: string;
+
+  @Prop({ required: true })
+  category: string;
 
   @Prop({ type: String, enum: ProjectStatus, default: ProjectStatus.UPCOMING })
   status: ProjectStatus;
@@ -47,6 +53,12 @@ export class Project extends Document {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
+  // 👥 Members relation
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
+  members: Types.ObjectId[];
 
   @Prop({ default: 0 })
   memberCount: number;
@@ -56,7 +68,6 @@ export class Project extends Document {
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);
-
 
 // Index for efficient queries
 ProjectSchema.index({ status: 1, startDate: -1 });

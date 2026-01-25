@@ -9,6 +9,7 @@ import { JoinRequestModule } from './join-request/join-request.module';
 import { PaymentModule } from './payment/payment.module';
 import { BannerModule } from './banner/banner.module';
 import { UserModule } from './user/user.module';
+import { StatsModule } from './stats/stats.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
@@ -45,6 +46,7 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     JoinRequestModule,
     PaymentModule,
     BannerModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers:[AppService]

@@ -7,6 +7,9 @@ export class Banner extends Document {
   title: string;
 
   @Prop({ required: true })
+  description: string;
+
+  @Prop({ required: true })
   image: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
