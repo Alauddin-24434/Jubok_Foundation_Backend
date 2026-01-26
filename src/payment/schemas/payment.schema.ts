@@ -15,12 +15,17 @@ export enum PaymentStatus {
   REFUNDED = 'refunded',
 }
 
+export enum PaymentType {
+  MEMBERSHIP = 'membership',
+  PROJECT = 'project',
+}
+
 @Schema({ timestamps: true })
 export class Payment extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Project', required: false })
   projectId: Types.ObjectId;
 
   @Prop({ required: true })
@@ -29,11 +34,17 @@ export class Payment extends Document {
   @Prop({ type: String, enum: PaymentMethod, required: true })
   method: PaymentMethod;
 
+  @Prop({ type: String, enum: PaymentType, default: PaymentType.PROJECT })
+  type: PaymentType;
+
   @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.PENDING })
   status: PaymentStatus;
 
   @Prop({ default: null })
   transactionId: string;
+
+  @Prop({ default: null })
+  bkashNumber: string;
 
   @Prop({ default: null })
   gatewayTransactionId: string;

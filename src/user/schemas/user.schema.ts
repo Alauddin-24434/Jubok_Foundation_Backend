@@ -11,6 +11,7 @@ export enum UserRole {
 
 export enum UserStatus {
   ACTIVE = 'active',
+  PENDING = 'pending',
   INACTIVE = 'inactive',
   SUSPENDED = 'suspended',
 }
@@ -41,7 +42,7 @@ export class User extends Document {
   @Prop({ default: null })
   address: string;
 
-  @Prop({ type: String, enum: UserStatus, default: UserStatus.ACTIVE })
+  @Prop({ type: String, enum: UserStatus, default: UserStatus.PENDING })
   status: UserStatus;
 
   @Prop({ default: null })

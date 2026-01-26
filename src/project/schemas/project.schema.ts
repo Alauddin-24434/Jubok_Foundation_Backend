@@ -7,6 +7,24 @@ export enum ProjectStatus {
   EXPIRED = 'expired',
 }
 
+@Schema({ _id: false })
+export class ProjectMember {
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  user: Types.ObjectId;
+
+  // 🔓 Dynamic role (no enum)
+  @Prop({ required: true, trim: true })
+  role: string;
+
+  @Prop({ required: true, trim: true })
+  responsibility: string;
+
+  @Prop({ default: true })
+  active: boolean;
+}
+
+export const ProjectMemberSchema = SchemaFactory.createForClass(ProjectMember);
+
 @Schema({ timestamps: true })
 export class Project extends Document {
   @Prop({ required: true, trim: true })
@@ -29,15 +47,10 @@ export class Project extends Document {
 
   @Prop({ required: true })
   endDate: Date;
-  // 🎯 Target
-  @Prop({ required: true })
-  targetAmount: number;
-  // 💰 Collected
-  @Prop({ default: 0 })
-  raisedAmount: number;
 
-  @Prop({ default: '' })
-  notice: string;
+  // initiate invesnment
+  @Prop({ required: true })
+  intialInvestment: number;
 
   @Prop({ required: true })
   category: string;
@@ -53,15 +66,12 @@ export class Project extends Document {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
-  // 👥 Members relation
+
   @Prop({
-    type: [{ type: Types.ObjectId, ref: 'User' }],
+    type: [ProjectMemberSchema],
     default: [],
   })
-  members: Types.ObjectId[];
-
-  @Prop({ default: 0 })
-  memberCount: number;
+  members: ProjectMember[];
 
   @Prop({ default: 0 })
   totalInvestment: number;

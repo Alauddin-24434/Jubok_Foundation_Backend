@@ -42,7 +42,7 @@ export class CreateProjectDto {
   @IsNotEmpty()
   @IsNumber()
   @Min(0)
-  targetAmount: number;
+  intialInvestment: number;
 
   @IsNotEmpty()
   @IsString()
@@ -52,10 +52,6 @@ export class CreateProjectDto {
   @IsNumber()
   totalInvestment?: number;
 
-  @IsOptional()
-  @IsString()
-  notice?: string;
-
   @IsNotEmpty()
   @IsString()
   location: string;
@@ -63,4 +59,8 @@ export class CreateProjectDto {
   @IsNotEmpty()
   @IsString()
   contactNumber: string;
+
+  @IsOptional()
+  @IsArray()
+  members?: any[];
 }

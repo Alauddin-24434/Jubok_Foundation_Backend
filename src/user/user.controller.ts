@@ -27,7 +27,7 @@ export class UserController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR)
   async update(@Param('id') id: string, @Body() updateData: any) {
     return this.userService.update(id, updateData);
   }

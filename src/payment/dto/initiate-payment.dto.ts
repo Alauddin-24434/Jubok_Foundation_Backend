@@ -4,13 +4,14 @@ import {
   IsNumber,
   IsEnum,
   Min,
+  IsOptional,
 } from 'class-validator';
-import { PaymentMethod } from '../schemas/payment.schema';
+import { PaymentMethod, PaymentType } from '../schemas/payment.schema';
 
 export class InitiatePaymentDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  projectId: string;
+  projectId?: string;
 
   @IsNotEmpty()
   @IsNumber()
@@ -20,4 +21,12 @@ export class InitiatePaymentDto {
   @IsNotEmpty()
   @IsEnum(PaymentMethod)
   method: PaymentMethod;
+
+  @IsOptional()
+  @IsEnum(PaymentType)
+  type?: PaymentType;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

@@ -1,29 +1,90 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Payment, PaymentStatus } from './schemas/payment.schema';
+import { Payment, PaymentStatus, PaymentMethod, PaymentType } from './schemas/payment.schema';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
+import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { SslcommerzService } from './services/sslcommerz.service';
 import { ProjectService } from '../project/project.service';
 import { v4 as uuidv4 } from 'uuid';
+import { User, UserStatus } from '../user/schemas/user.schema';
 
 @Injectable()
 export class PaymentService {
   constructor(
     @InjectModel(Payment.name) private paymentModel: Model<Payment>,
+    @InjectModel(User.name) private userModel: Model<User>,
     private sslcommerzService: SslcommerzService,
     private projectService: ProjectService,
   ) {}
+
+  // ... existing initiatePayment method ...
+
+  async verifyMembershipPayment(
+    verifyPaymentDto: VerifyPaymentDto,
+    userId: string,
+  ) {
+    const { bkashNumber, transactionId } = verifyPaymentDto;
+
+    // Check for duplicate transaction ID
+    const existingPayment = await this.paymentModel.findOne({ transactionId });
+    if (existingPayment) {
+      throw new BadRequestException('Transaction ID already submitted');
+    }
+
+    const payment = new this.paymentModel({
+      userId,
+      amount: 500, // Fixed membership fee
+      method: PaymentMethod.BKASH,
+      type: PaymentType.MEMBERSHIP,
+      status: PaymentStatus.PENDING,
+      bkashNumber,
+      transactionId,
+      description: 'Monthly Membership Due',
+    });
+
+    return payment.save();
+  }
+
+  async approvePayment(paymentId: string) {
+    const payment = await this.paymentModel.findById(paymentId);
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    if (payment.status === PaymentStatus.PAID) {
+      throw new BadRequestException('Payment already approved');
+    }
+
+    // Approve Payment
+    payment.status = PaymentStatus.PAID;
+    payment.paidAt = new Date();
+    await payment.save();
+
+    // Activate User if Membership Payment
+    if (payment.type === PaymentType.MEMBERSHIP) {
+      await this.userModel.findByIdAndUpdate(payment.userId, {
+        status: UserStatus.ACTIVE,
+      });
+    }
+
+    return payment;
+  }
+
+  // ... existing handler methods ...
 
   async initiatePayment(
     initiatePaymentDto: InitiatePaymentDto,
     userId: string,
     userDetails: any,
   ) {
-    const { projectId, amount, method } = initiatePaymentDto;
+    const { projectId, amount, method, type, description } = initiatePaymentDto;
 
-    // Verify project exists
-    const project = await this.projectService.findOne(projectId);
+    let project: any = null;
+    if (projectId) {
+      // Verify project exists
+      project = await this.projectService.findOne(projectId);
+    }
 
     // Create payment record
     const transactionId = `TXN-${Date.now()}-${uuidv4().substring(0, 8)}`;
@@ -33,8 +94,9 @@ export class PaymentService {
       projectId,
       amount,
       method,
+      type: type || (projectId ? PaymentType.PROJECT : PaymentType.MEMBERSHIP),
       transactionId,
-      description: `Investment for ${project.name}`,
+      description: description || (project ? `Investment for ${project.name}` : 'Monthly Membership Due'),
     });
 
     await payment.save();
@@ -43,7 +105,7 @@ export class PaymentService {
     const paymentData = {
       transactionId,
       amount,
-      productName: `Investment: ${project.name}`,
+      productName: project ? `Investment: ${project.name}` : 'Membership Payment',
       customerName: userDetails.name,
       customerEmail: userDetails.email,
       customerPhone: userDetails.phone,
@@ -88,11 +150,20 @@ export class PaymentService {
 
       await payment.save();
 
-      // Update project total investment
-      await this.projectService.updateTotalInvestment(
-        payment.projectId.toString(),
-        payment.amount,
-      );
+      // Update project total investment if it's a project payment
+      if (payment.type === PaymentType.PROJECT && payment.projectId) {
+        await this.projectService.updateTotalInvestment(
+          payment.projectId.toString(),
+          payment.amount,
+        );
+      }
+
+      // Activate user if it's a membership payment
+      if (payment.type === PaymentType.MEMBERSHIP) {
+        await this.userModel.findByIdAndUpdate(payment.userId, {
+          status: UserStatus.ACTIVE,
+        });
+      }
     }
 
     return payment;
@@ -123,6 +194,17 @@ export class PaymentService {
     return this.paymentModel
       .find({ projectId, status: PaymentStatus.PAID })
       .populate('userId', 'name email')
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async findPendingMembershipPayments() {
+    return this.paymentModel
+      .find({
+        type: PaymentType.MEMBERSHIP,
+        status: PaymentStatus.PENDING,
+      })
+      .populate('userId', 'name email phone avatar')
       .sort({ createdAt: -1 })
       .exec();
   }

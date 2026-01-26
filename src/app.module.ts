@@ -10,6 +10,7 @@ import { PaymentModule } from './payment/payment.module';
 import { BannerModule } from './banner/banner.module';
 import { UserModule } from './user/user.module';
 import { StatsModule } from './stats/stats.module';
+import { FundModule } from './fund/fund.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
@@ -47,6 +48,7 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     PaymentModule,
     BannerModule,
     StatsModule,
+    FundModule,
   ],
   controllers: [AppController],
   providers:[AppService]

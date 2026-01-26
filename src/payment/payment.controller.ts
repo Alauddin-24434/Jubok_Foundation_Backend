@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   Query,
   UseGuards,
@@ -11,6 +12,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { PaymentService } from './payment.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
+import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../user/schemas/user.schema';
@@ -30,6 +32,25 @@ export class PaymentController {
       req.user._id,
       req.user,
     );
+  }
+
+  @Post('verify')
+  @UseGuards(AuthGuard('jwt'))
+  verifyPayment(
+    @Body() verifyPaymentDto: VerifyPaymentDto,
+    @Request() req,
+  ) {
+    return this.paymentService.verifyMembershipPayment(
+      verifyPaymentDto,
+      req.user._id,
+    );
+  }
+
+  @Patch(':id/approve')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  approvePayment(@Param('id') id: string) {
+    return this.paymentService.approvePayment(id);
   }
 
   @Post('success')
@@ -61,5 +82,12 @@ export class PaymentController {
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR)
   findByProject(@Param('projectId') projectId: string) {
     return this.paymentService.findByProject(projectId);
+  }
+
+  @Get('admin/pending-membership')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR)
+  findPendingMembershipPayments() {
+    return this.paymentService.findPendingMembershipPayments();
   }
 }

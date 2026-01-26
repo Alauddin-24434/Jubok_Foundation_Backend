@@ -133,14 +133,14 @@ src/
 5. Use environment-specific `.env` files
 6. Enable MongoDB replica sets for transactions
 
-## SSLCommerz Integration
+## Payment Integration (Manual Bkash)
 
-The payment module is ready for SSLCommerz. To enable:
+The platform supports a manual payment verification flow for membership activation:
 
-1. Sign up at [SSLCommerz](https://www.sslcommerz.com/)
-2. Get your Store ID and Password
-3. Update `.env` with your credentials
-4. Set `SSLCOMMERZ_IS_LIVE=true` for production
+1.  User sends money to the provided Bkash number.
+2.  User submits their **Bkash Number** and **Transaction ID** via the dashboard.
+3.  Admin reviews the request in the admin panel (`PATCH /api/payments/:id/approve`).
+4.  Upon approval, the user's status is updated to `active`.
 
 ## Development
 
