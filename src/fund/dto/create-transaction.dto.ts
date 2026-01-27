@@ -1,21 +1,32 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsString, IsDateString, Min, IsOptional } from 'class-validator';
+import {
+  IsEnum,
+  IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsArray,
+  Min,
+} from 'class-validator';
 import { TransactionType } from '../schemas/fund-transaction.schema';
 
-export class CreateTransactionDto {
-  @IsNotEmpty()
+export class CreateFundTransactionDto {
   @IsEnum(TransactionType)
   type: TransactionType;
 
-  @IsNotEmpty()
   @IsNumber()
-  @Min(1)
+  @Min(0)
   amount: number;
 
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
   reason: string;
 
+  // 🧾 Evidence image URLs (optional)
   @IsOptional()
-  @IsDateString()
-  date?: string;
+  @IsArray()
+  @IsString({ each: true })
+  // অথবা strict হলে:
+  // @IsUrl({}, { each: true })
+  evidenceImages?: string[];
 }

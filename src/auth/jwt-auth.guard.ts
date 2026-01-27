@@ -33,7 +33,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     if (!user) {
       // console.log('❌ No user attached to request. Reason:', info?.message || 'Unknown');
-      throw err || new UnauthorizedException(info?.message || 'Invalid or missing token');
+      throw (
+        err ||
+        new UnauthorizedException(info?.message || 'Invalid or missing token')
+      );
     }
 
     // console.log('🟢 User authenticated:', user);

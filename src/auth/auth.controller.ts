@@ -18,6 +18,7 @@ import { StatsService } from '../stats/stats.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 export interface JwtUser {
   _id: string;
   email: string;
@@ -25,6 +26,8 @@ export interface JwtUser {
   permissions?: string[];
 }
 
+@ApiTags('Auth')
+@ApiBearerAuth()
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -59,19 +62,6 @@ export class AuthController {
     };
   }
 
-  /* ================= ME ================= */
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  async me(@ReqDecorator() req: Request) {
-    // console.log('✅ req.user:', req.user);
-
-    const user = req.user as JwtUser;
-
-    const userId = user._id; // ✅ NO TS ERROR
-
-    return this.authService.validateUser(userId);
-  }
-
   /* ================= LOGIN ================= */
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -99,13 +89,23 @@ export class AuthController {
     };
   }
 
+  /* ================= ME ================= */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async me(@ReqDecorator() req: Request) {
+    // console.log('✅ req.user:', req.user);
+
+    const user = req.user as JwtUser;
+
+    const userId = user._id; // ✅ NO TS ERROR
+
+    return this.authService.me(userId);
+  }
+
   /* ================= REFRESH TOKEN ================= */
   @Post('refresh-token')
-  async refreshToken(
-    @Req() req: Request,
-    @Res({ passthrough: true }) _res: Response,
-  ) {
-    const refreshToken = req.cookies?.refreshToken;
+  async refreshToken(@Req() req: Request) {
+    const refreshToken = (req.cookies as Record<string, string>)?.refreshToken;
 
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token missing');
@@ -126,8 +126,8 @@ export class AuthController {
   /* ================= STATS ================= */
   @Get('stats')
   @UseGuards(JwtAuthGuard)
-  async getStats(@ReqDecorator() req: any) {
-    const user = req.user;
+  async getStats(@ReqDecorator() req: Request) {
+    const user = req.user as JwtUser;
     if (user.role === 'SuperAdmin' || user.role === 'Admin') {
       return this.statsService.getAdminStats();
     }

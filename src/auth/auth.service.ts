@@ -12,6 +12,11 @@ import { Model } from 'mongoose';
 import { User, UserRole } from '../user/schemas/user.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import {
+  Payment,
+  PaymentPurpose,
+  PaymentStatus,
+} from 'src/payment/schemas/payment.schema';
 
 /* ================= TOKEN PAYLOAD ================= */
 export interface TokenPayload {
@@ -25,6 +30,7 @@ export interface TokenPayload {
 export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(Payment.name) private readonly paymentModel: Model<Payment>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -52,7 +58,7 @@ export class AuthService {
     };
   }
 
-  private verifyRefreshToken(token: string) {
+  private verifyRefreshToken(token: string): TokenPayload {
     return this.jwtService.verify(token, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
     });
@@ -75,7 +81,7 @@ export class AuthService {
       phone,
       address,
       avatar,
-      role: UserRole.USER,
+      role: UserRole.GUEST,
       permissions: [],
     });
 
@@ -152,11 +158,29 @@ export class AuthService {
   }
 
   async me(userId: string) {
-    const user = await this.userModel.findById(userId);
+    // 1️⃣ User
+    const user = await this.userModel.findById(userId).lean();
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return user;
+    console.log(user);
+
+    // 2️⃣ Check activation payment
+    const activationPayment = await this.paymentModel.findOne({
+      userId,
+      purpose: PaymentPurpose.ACCOUNT_ACTIVATION,
+      status: PaymentStatus.PAID,
+    });
+
+    const isActivated = !!activationPayment;
+    console.log({
+      ...user,
+      isActivated: isActivated,
+    });
+    return {
+      ...user,
+      isActivated: isActivated,
+    };
   }
 
   /* ================= REFRESH TOKEN ================= */

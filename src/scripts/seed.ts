@@ -9,14 +9,14 @@ async function bootstrap() {
 
   const adminData = {
     name: 'Alauddin',
-    email: 'superadmin@gmail.com',
+    email: 'super1@gmail.com',
     password: '123456',
     role: UserRole.SUPER_ADMIN,
   };
 
   try {
     console.log('🌱 Seeding Super Admin...');
-    
+
     const userModel = (userService as any).userModel;
     if (!userModel) {
       throw new Error('Could not access user model from UserService');
@@ -31,7 +31,7 @@ async function bootstrap() {
 
     const newUser = new userModel(adminData);
     await newUser.save();
-    
+
     console.log('✅ Super Admin created successfully!');
     console.log(`📧 Email: ${adminData.email}`);
     console.log(`🔑 Password: ${adminData.password}`);

@@ -4,8 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
-
-
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -36,17 +35,35 @@ async function bootstrap() {
       exceptionFactory: (errors) => {
         const result = errors.map((error) => ({
           property: error.property,
-          message: error.constraints ? Object.values(error.constraints)[0] : 'Invalid value',
+          message: error.constraints
+            ? Object.values(error.constraints)[0]
+            : 'Invalid value',
         }));
         console.error('Validation Errors:', JSON.stringify(result, null, 2));
         return new BadRequestException(result);
       },
     }),
   );
+ 
+  // Swagger Configuration
+  const config = new DocumentBuilder()
+    .setTitle('Alhamdulillah Foundation API')
+    .setDescription('The API documentation for Alhamdulillah Foundation backend')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
 
   const port = configService.get<number>('PORT') || 5000;
   await app.listen(port);
 
   console.log(`🚀 Application is running on: http://localhost:${port}/api`);
+  console.log(`📜 Documentation available at: http://localhost:${port}/docs`);
 }
 bootstrap();

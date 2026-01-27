@@ -1,11 +1,23 @@
-import { Controller, Post, Get, Body, UseGuards, Request, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Request,
+  Query,
+} from '@nestjs/common';
 import { FundService } from './fund.service';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../user/schemas/user.schema';
+import { CreateFundTransactionDto } from './dto/create-transaction.dto';
 
+@ApiTags('Funds')
+@ApiBearerAuth()
 @Controller('funds')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class FundController {
@@ -13,8 +25,14 @@ export class FundController {
 
   @Post('transaction')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  addTransaction(@Body() createTransactionDto: CreateTransactionDto, @Request() req) {
-    return this.fundService.addTransaction(createTransactionDto, req.user._id);
+  addTransaction(
+    @Body() createFundTransactionDto: CreateFundTransactionDto,
+    @Request() req,
+  ) {
+    return this.fundService.addTransaction(
+      createFundTransactionDto,
+      req.user._id,
+    );
   }
 
   @Get('summary')

@@ -14,7 +14,11 @@ import { CreateBannerDto } from './dto/create-banner.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../user/schemas/user.schema';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+
+@ApiTags('Banners')
+@ApiBearerAuth()
 @Controller('banners')
 export class BannerController {
   constructor(private readonly bannerService: BannerService) {}
@@ -39,7 +43,10 @@ export class BannerController {
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  update(@Param('id') id: string, @Body() updateData: Partial<CreateBannerDto>) {
+  update(
+    @Param('id') id: string,
+    @Body() updateData: Partial<CreateBannerDto>,
+  ) {
     return this.bannerService.update(id, updateData);
   }
 

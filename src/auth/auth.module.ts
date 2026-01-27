@@ -11,6 +11,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { User, UserSchema } from '../user/schemas/user.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { StatsModule } from '../stats/stats.module';
+import { Payment, PaymentSchema } from 'src/payment/schemas/payment.schema';
 
 @Module({
   imports: [
@@ -27,14 +28,16 @@ import { StatsModule } from '../stats/stats.module';
     }),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
+      { name: Payment.name, schema: PaymentSchema },
     ]),
+
     StatsModule,
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
-    JwtStrategy,     // ⭐ Strategy register না হলে Guard কাজ করবে না
-    JwtAuthGuard,    // (optional) যদি DI দিয়ে কোথাও inject করো
+    JwtStrategy, // ⭐ Strategy register না হলে Guard কাজ করবে না
+    JwtAuthGuard, // (optional) যদি DI দিয়ে কোথাও inject করো
   ],
   exports: [
     AuthService,

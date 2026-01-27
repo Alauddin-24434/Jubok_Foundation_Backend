@@ -6,10 +6,7 @@ import {
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Types, Connection } from 'mongoose';
 
-import {
-  Payment,
-  PaymentStatus,
-} from './schemas/payment.schema';
+import { Payment, PaymentStatus } from './schemas/payment.schema';
 
 import {
   FundTransaction,
@@ -17,7 +14,7 @@ import {
 } from '../fund/schemas/fund-transaction.schema';
 
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
-import { User } from '../user/schemas/user.schema';
+import { User, UserRole, UserStatus } from '../user/schemas/user.schema';
 
 @Injectable()
 export class PaymentService {
@@ -38,10 +35,7 @@ export class PaymentService {
   // ===============================
   // USER → INITIATE PAYMENT
   // ===============================
-  async initiatePayment(
-    userId: Types.ObjectId,
-    dto: InitiatePaymentDto,
-  ) {
+  async initiatePayment(userId: Types.ObjectId, dto: InitiatePaymentDto) {
     if (!dto.transactionId) {
       throw new BadRequestException('Transaction ID is required');
     }
@@ -61,11 +55,12 @@ export class PaymentService {
       purpose: dto.purpose,
       transactionId: dto.transactionId,
       status: PaymentStatus.PENDING,
-     senderNumber: dto.senderNumber,
+      senderNumber: dto.senderNumber,
     });
 
     return {
-      message: 'Payment initiated successfully. Waiting for admin confirmation.',
+      message:
+        'Payment initiated successfully. Waiting for admin confirmation.',
       paymentId: payment._id,
     };
   }
@@ -73,10 +68,7 @@ export class PaymentService {
   // ===============================
   // ADMIN → APPROVE PAYMENT
   // ===============================
-  async approvePayment(
-    paymentId: string,
-    adminId: Types.ObjectId,
-  ) {
+  async approvePayment(paymentId: string, adminId: Types.ObjectId) {
     const session = await this.connection.startSession();
     session.startTransaction();
 
@@ -126,6 +118,13 @@ export class PaymentService {
         { session },
       );
 
+      // 👤 ACTIVATE USER (🔥 NEW PART)
+      await this.userModel.updateOne(
+        { _id: payment.userId },
+        { $set: { status: UserStatus.ACTIVE, role: UserRole.MEMBER } },
+        { session },
+      );
+
       await session.commitTransaction();
       session.endSession();
 
@@ -140,6 +139,7 @@ export class PaymentService {
       throw error;
     }
   }
+
   async getPayments(query: any) {
     const {
       page = 1,
@@ -186,7 +186,7 @@ export class PaymentService {
         limit: Number(limit),
         totalPages: Math.ceil(total / limit),
       },
-    }
+    };
   }
 
   // ===============================
@@ -197,7 +197,4 @@ export class PaymentService {
     const random = Math.floor(100000 + Math.random() * 900000);
     return `INV-${year}-${random}`;
   }
-
-
-
 }

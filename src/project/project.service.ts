@@ -24,7 +24,13 @@ export class ProjectService {
     return project.save();
   }
 
-  async findAll(query?: { search?: string; status?: ProjectStatus; category?: string; page?: number; limit?: number }) {
+  async findAll(query?: {
+    search?: string;
+    status?: ProjectStatus;
+    category?: string;
+    page?: number;
+    limit?: number;
+  }) {
     const { search, status, category, page = 1, limit = 10 } = query || {};
     const filter: any = {};
 

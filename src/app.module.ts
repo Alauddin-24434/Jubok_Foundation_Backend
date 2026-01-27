@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule} from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -14,6 +14,8 @@ import { FundModule } from './fund/fund.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
+import { NoticeModule } from './notice/notice.module';
+import { ManagementModule } from './management/management.module';
 
 @Module({
   imports: [
@@ -34,10 +36,12 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ([{
-        ttl: config.get<number>('THROTTLE_TTL') || 60,
-        limit: config.get<number>('THROTTLE_LIMIT') || 10,
-      }]),
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get<number>('THROTTLE_TTL') || 60,
+          limit: config.get<number>('THROTTLE_LIMIT') || 10,
+        },
+      ],
     }),
 
     // Feature Modules
@@ -46,14 +50,16 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     ProjectModule,
     PaymentModule,
     BannerModule,
+    NoticeModule,
     StatsModule,
     FundModule,
+    ManagementModule,
   ],
   controllers: [AppController],
-  providers:[AppService]
+  providers: [AppService],
 })
-export class AppModule implements NestModule{
+export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestLoggerMiddleware).forRoutes('*')
+    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
   }
 }

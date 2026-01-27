@@ -4,15 +4,19 @@ import { PaymentService } from './payment.service';
 import { PaymentController } from './payment.controller';
 import { Payment, PaymentSchema } from './schemas/payment.schema';
 import { SslcommerzService } from './services/sslcommerz.service';
-import { ProjectModule } from '../project/project.module';
 
 import { User, UserSchema } from '../user/schemas/user.schema';
 import { FundModule } from 'src/fund/fund.module';
+import {
+  FundTransaction,
+  FundTransactionSchema,
+} from 'src/fund/schemas/fund-transaction.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Payment.name, schema: PaymentSchema },
+      { name: FundTransaction.name, schema: FundTransactionSchema },
       { name: User.name, schema: UserSchema },
     ]),
     FundModule,

@@ -1,35 +1,64 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { FundTransaction, TransactionType } from './schemas/fund-transaction.schema';
-import { CreateTransactionDto } from './dto/create-transaction.dto';
+import {
+  FundTransaction,
+  TransactionType,
+} from './schemas/fund-transaction.schema';
+import { CreateFundTransactionDto } from './dto/create-transaction.dto';
+
+interface FundAggregateResult {
+  totalIncome: number;
+  totalExpense: number;
+}
 
 @Injectable()
 export class FundService {
   constructor(
-    @InjectModel(FundTransaction.name) private fundModel: Model<FundTransaction>,
+    @InjectModel(FundTransaction.name)
+    private fundModel: Model<FundTransaction>,
   ) {}
 
-  async addTransaction(createTransactionDto: CreateTransactionDto, userId: string) {
-    const { type, amount, reason, date } = createTransactionDto;
+  async addTransaction(
+    createFundTransactionDto: CreateFundTransactionDto,
+    userId: string,
+  ) {
+    const {
+      type,
+      amount,
+      reason,
+      evidenceImages = [],
+    } = createFundTransactionDto;
 
-    // Get current balance
-    const lastTransaction = await this.fundModel.findOne().sort({ date: -1, createdAt: -1 });
-    const currentBalance = lastTransaction ? lastTransaction.balanceSnapshot : 0;
+    // 1️⃣ Get current balance (last transaction)
+    const lastTransaction = await this.fundModel
+      .findOne()
+      .sort({ createdAt: -1 });
 
-    // Calculate new balance
+    const currentBalance = lastTransaction
+      ? lastTransaction.balanceSnapshot
+      : 0;
+
+    // 2️⃣ Calculate new balance
     let newBalance = currentBalance;
+
     if (type === TransactionType.INCOME) {
       newBalance += amount;
     } else {
       newBalance -= amount;
     }
 
+    // ❗ Optional safety: prevent negative balance
+    if (newBalance < 0) {
+      throw new BadRequestException('Insufficient fund balance');
+    }
+
+    // 3️⃣ Create transaction
     const transaction = new this.fundModel({
       type,
       amount,
       reason,
-      date: date ? new Date(date) : new Date(),
+      evidenceImages, // ✅ added
       balanceSnapshot: newBalance,
       createdBy: userId,
     });
@@ -49,15 +78,23 @@ export class FundService {
           },
           totalExpense: {
             $sum: {
-              $cond: [{ $eq: ['$type', TransactionType.EXPENSE] }, '$amount', 0],
+              $cond: [
+                { $eq: ['$type', TransactionType.EXPENSE] },
+                '$amount',
+                0,
+              ],
             },
           },
         },
       },
     ]);
 
-    const lastTransaction = await this.fundModel.findOne().sort({ date: -1, createdAt: -1 });
-    const currentBalance = lastTransaction ? lastTransaction.balanceSnapshot : 0;
+    const lastTransaction = await this.fundModel
+      .findOne()
+      .sort({ date: -1, createdAt: -1 });
+    const currentBalance = lastTransaction
+      ? lastTransaction.balanceSnapshot
+      : 0;
 
     if (!result.length) {
       return {
@@ -66,15 +103,16 @@ export class FundService {
         currentBalance: 0,
       };
     }
+    const aggregateData = (result as FundAggregateResult[])[0];
     console.log({
-       totalIncome: result[0].totalIncome,
-      totalExpense: result[0].totalExpense,
+      totalIncome: aggregateData.totalIncome,
+      totalExpense: aggregateData.totalExpense,
       currentBalance,
-    })
+    });
 
     return {
-      totalIncome: result[0].totalIncome,
-      totalExpense: result[0].totalExpense,
+      totalIncome: aggregateData.totalIncome,
+      totalExpense: aggregateData.totalExpense,
       currentBalance,
     };
   }

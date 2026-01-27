@@ -19,14 +19,17 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../user/schemas/user.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+
+@ApiTags('Projects')
+@ApiBearerAuth()
 @Controller('projects')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
   @Post()
-   @UseGuards(JwtAuthGuard,RolesGuard)
-
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
     return this.projectService.create(createProjectDto, req.user._id);

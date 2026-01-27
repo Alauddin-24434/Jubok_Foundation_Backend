@@ -18,7 +18,9 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../user/schemas/user.schema';
 import { PaymentStatus } from './schemas/payment.schema';
-
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+@ApiTags('Payments')
+@ApiBearerAuth()
 @Controller('payments')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}

@@ -4,7 +4,6 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService, TokenPayload } from '../auth.service';
 
-
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
@@ -13,14 +12,13 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   ) {
     //  console.log('🔥 JwtStrategy LOADED1');
     const secret = configService.get<string>('JWT_ACCESS_SECRET');
-//  console.log('🔥 JwtStrategy LOADED2');
+    //  console.log('🔥 JwtStrategy LOADED2');
     if (!secret) {
       //  console.log('🔥 JwtStrategy LOADED3');
       throw new Error('JWT_ACCESS_SECRET is not defined');
     }
-//  console.log('🔥 JwtStrategy LOADED4');
+    //  console.log('🔥 JwtStrategy LOADED4');
     super({
-      
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: secret, // ✅ now guaranteed string
@@ -29,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     // console.log('🔥 JwtStrategy LOADED5');
   }
 
-  async validate(payload:TokenPayload ) {
+  async validate(payload: TokenPayload) {
     // console.log('🟢 JWT PAYLOA6:', payload);
 
     const user = await this.authService.validateUser(payload._id);
@@ -46,6 +44,3 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     };
   }
 }
-
-
-
