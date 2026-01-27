@@ -61,7 +61,7 @@ export class AuthService {
   /* ================= REGISTER ================= */
 
   async register(registerDto: RegisterDto) {
-    const { email, password, name, phone, address } = registerDto;
+    const { email, password, name, phone, address, avatar } = registerDto;
 
     const existingUser = await this.userModel.findOne({ email });
     if (existingUser) {
@@ -74,6 +74,7 @@ export class AuthService {
       password,
       phone,
       address,
+      avatar,
       role: UserRole.USER,
       permissions: [],
     });
@@ -98,7 +99,7 @@ export class AuthService {
   /* ================= LOGIN ================= */
 
   async login(loginDto: LoginDto) {
-    // console.log('🔐 Login request received');
+    console.log('🔐 Login request received');
 
     const { email, password } = loginDto;
     // console.log('📧 Email:', email);
@@ -123,7 +124,7 @@ export class AuthService {
     user.lastLogin = new Date();
     await user.save();
 
-    // console.log('🕒 Last login updated');
+    console.log('🕒 Last login updated');
 
     // 4️⃣ JWT Payload
     const payload: TokenPayload = {

@@ -17,6 +17,12 @@ export class UserController {
     const userId = req.user._id;
     return this.userService.me(userId);
   }
+    // 🔹 Update own profile (MUST BE BEFORE :id)
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  async updateMe(@Request() req, @Body() updateData: any) {
+    return this.userService.update(req.user._id, updateData);
+  }
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -31,6 +37,8 @@ export class UserController {
   async update(@Param('id') id: string, @Body() updateData: any) {
     return this.userService.update(id, updateData);
   }
+
+
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)

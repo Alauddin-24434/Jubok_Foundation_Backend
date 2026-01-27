@@ -11,14 +11,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly authService: AuthService,
     configService: ConfigService,
   ) {
-     console.log('🔥 JwtStrategy LOADED1');
+    //  console.log('🔥 JwtStrategy LOADED1');
     const secret = configService.get<string>('JWT_ACCESS_SECRET');
- console.log('🔥 JwtStrategy LOADED2');
+//  console.log('🔥 JwtStrategy LOADED2');
     if (!secret) {
-       console.log('🔥 JwtStrategy LOADED3');
+      //  console.log('🔥 JwtStrategy LOADED3');
       throw new Error('JWT_ACCESS_SECRET is not defined');
     }
- console.log('🔥 JwtStrategy LOADED4');
+//  console.log('🔥 JwtStrategy LOADED4');
     super({
       
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -26,11 +26,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       secretOrKey: secret, // ✅ now guaranteed string
     });
 
-    console.log('🔥 JwtStrategy LOADED5');
+    // console.log('🔥 JwtStrategy LOADED5');
   }
 
   async validate(payload:TokenPayload ) {
-    console.log('🟢 JWT PAYLOA6:', payload);
+    // console.log('🟢 JWT PAYLOA6:', payload);
 
     const user = await this.authService.validateUser(payload._id);
 

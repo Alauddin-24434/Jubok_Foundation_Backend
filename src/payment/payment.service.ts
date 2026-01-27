@@ -1,211 +1,203 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Payment, PaymentStatus, PaymentMethod, PaymentType } from './schemas/payment.schema';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Types, Connection } from 'mongoose';
+
+import {
+  Payment,
+  PaymentStatus,
+} from './schemas/payment.schema';
+
+import {
+  FundTransaction,
+  TransactionType,
+} from '../fund/schemas/fund-transaction.schema';
+
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
-import { VerifyPaymentDto } from './dto/verify-payment.dto';
-import { SslcommerzService } from './services/sslcommerz.service';
-import { ProjectService } from '../project/project.service';
-import { v4 as uuidv4 } from 'uuid';
-import { User, UserStatus } from '../user/schemas/user.schema';
+import { User } from '../user/schemas/user.schema';
 
 @Injectable()
 export class PaymentService {
   constructor(
-    @InjectModel(Payment.name) private paymentModel: Model<Payment>,
-    @InjectModel(User.name) private userModel: Model<User>,
-    private sslcommerzService: SslcommerzService,
-    private projectService: ProjectService,
+    @InjectModel(Payment.name)
+    private readonly paymentModel: Model<Payment>,
+
+    @InjectModel(FundTransaction.name)
+    private readonly fundModel: Model<FundTransaction>,
+
+    @InjectModel(User.name)
+    private readonly userModel: Model<User>,
+
+    @InjectConnection()
+    private readonly connection: Connection,
   ) {}
 
-  // ... existing initiatePayment method ...
-
-  async verifyMembershipPayment(
-    verifyPaymentDto: VerifyPaymentDto,
-    userId: string,
-  ) {
-    const { bkashNumber, transactionId } = verifyPaymentDto;
-
-    // Check for duplicate transaction ID
-    const existingPayment = await this.paymentModel.findOne({ transactionId });
-    if (existingPayment) {
-      throw new BadRequestException('Transaction ID already submitted');
-    }
-
-    const payment = new this.paymentModel({
-      userId,
-      amount: 500, // Fixed membership fee
-      method: PaymentMethod.BKASH,
-      type: PaymentType.MEMBERSHIP,
-      status: PaymentStatus.PENDING,
-      bkashNumber,
-      transactionId,
-      description: 'Monthly Membership Due',
-    });
-
-    return payment.save();
-  }
-
-  async approvePayment(paymentId: string) {
-    const payment = await this.paymentModel.findById(paymentId);
-    if (!payment) {
-      throw new NotFoundException('Payment not found');
-    }
-
-    if (payment.status === PaymentStatus.PAID) {
-      throw new BadRequestException('Payment already approved');
-    }
-
-    // Approve Payment
-    payment.status = PaymentStatus.PAID;
-    payment.paidAt = new Date();
-    await payment.save();
-
-    // Activate User if Membership Payment
-    if (payment.type === PaymentType.MEMBERSHIP) {
-      await this.userModel.findByIdAndUpdate(payment.userId, {
-        status: UserStatus.ACTIVE,
-      });
-    }
-
-    return payment;
-  }
-
-  // ... existing handler methods ...
-
+  // ===============================
+  // USER → INITIATE PAYMENT
+  // ===============================
   async initiatePayment(
-    initiatePaymentDto: InitiatePaymentDto,
-    userId: string,
-    userDetails: any,
+    userId: Types.ObjectId,
+    dto: InitiatePaymentDto,
   ) {
-    const { projectId, amount, method, type, description } = initiatePaymentDto;
-
-    let project: any = null;
-    if (projectId) {
-      // Verify project exists
-      project = await this.projectService.findOne(projectId);
+    if (!dto.transactionId) {
+      throw new BadRequestException('Transaction ID is required');
     }
 
-    // Create payment record
-    const transactionId = `TXN-${Date.now()}-${uuidv4().substring(0, 8)}`;
-
-    const payment = new this.paymentModel({
-      userId,
-      projectId,
-      amount,
-      method,
-      type: type || (projectId ? PaymentType.PROJECT : PaymentType.MEMBERSHIP),
-      transactionId,
-      description: description || (project ? `Investment for ${project.name}` : 'Monthly Membership Due'),
+    const exists = await this.paymentModel.findOne({
+      transactionId: dto.transactionId,
     });
 
-    await payment.save();
+    if (exists) {
+      throw new BadRequestException('Transaction already used');
+    }
 
-    // Initiate SSLCommerz payment
-    const paymentData = {
-      transactionId,
-      amount,
-      productName: project ? `Investment: ${project.name}` : 'Membership Payment',
-      customerName: userDetails.name,
-      customerEmail: userDetails.email,
-      customerPhone: userDetails.phone,
-      customerAddress: userDetails.address,
-      customerCity: 'Dhaka',
-    };
-
-    const gatewayResponse = await this.sslcommerzService.initiatePayment(
-      paymentData,
-    );
-
-    // Update payment with gateway response
-    payment.gatewayResponse = gatewayResponse;
-    await payment.save();
+    const payment = await this.paymentModel.create({
+      userId,
+      amount: dto.amount,
+      method: dto.method,
+      purpose: dto.purpose,
+      transactionId: dto.transactionId,
+      status: PaymentStatus.PENDING,
+     senderNumber: dto.senderNumber,
+    });
 
     return {
-      payment,
-      gatewayUrl: gatewayResponse.GatewayPageURL,
+      message: 'Payment initiated successfully. Waiting for admin confirmation.',
+      paymentId: payment._id,
     };
   }
 
-  async handleSuccess(transactionId: string, gatewayData: any) {
-    const payment = await this.paymentModel
-      .findOne({ transactionId })
-      .exec();
+  // ===============================
+  // ADMIN → APPROVE PAYMENT
+  // ===============================
+  async approvePayment(
+    paymentId: string,
+    adminId: Types.ObjectId,
+  ) {
+    const session = await this.connection.startSession();
+    session.startTransaction();
 
-    if (!payment) {
-      throw new NotFoundException('Payment not found');
-    }
+    try {
+      const payment = await this.paymentModel
+        .findById(paymentId)
+        .session(session);
 
-    // Validate with SSLCommerz
-    const validation = await this.sslcommerzService.validatePayment(
-      gatewayData.val_id,
-    );
+      if (!payment) {
+        throw new NotFoundException('Payment not found');
+      }
 
-    if (validation.status === 'VALID' || validation.status === 'VALIDATED') {
+      if (payment.status !== PaymentStatus.PENDING) {
+        throw new BadRequestException('Payment already processed');
+      }
+
+      // 🔢 Get last balance
+      const lastTx = await this.fundModel
+        .findOne()
+        .sort({ createdAt: -1 })
+        .session(session);
+
+      const previousBalance = lastTx?.balanceSnapshot || 0;
+      const newBalance = previousBalance + payment.amount;
+
+      // 🧾 Generate invoice
+      const invoiceNumber = this.generateInvoiceNumber();
+
+      // ✅ Update payment
       payment.status = PaymentStatus.PAID;
       payment.paidAt = new Date();
-      payment.gatewayTransactionId = gatewayData.tran_id;
-      payment.bankTranId = gatewayData.bank_tran_id;
-      payment.gatewayResponse = { ...payment.gatewayResponse, validation };
+      payment.invoiceNumber = invoiceNumber;
+      await payment.save({ session });
 
-      await payment.save();
+      // 💰 Create fund transaction
+      await this.fundModel.create(
+        [
+          {
+            type: TransactionType.INCOME,
+            amount: payment.amount,
+            reason: `Payment approved (${payment.purpose})`,
+            balanceSnapshot: newBalance,
+            paymentId: payment._id,
+            createdBy: adminId,
+          },
+        ],
+        { session },
+      );
 
-      // Update project total investment if it's a project payment
-      if (payment.type === PaymentType.PROJECT && payment.projectId) {
-        await this.projectService.updateTotalInvestment(
-          payment.projectId.toString(),
-          payment.amount,
-        );
-      }
+      await session.commitTransaction();
+      session.endSession();
 
-      // Activate user if it's a membership payment
-      if (payment.type === PaymentType.MEMBERSHIP) {
-        await this.userModel.findByIdAndUpdate(payment.userId, {
-          status: UserStatus.ACTIVE,
-        });
-      }
+      return {
+        message: 'Payment approved successfully',
+        invoiceNumber,
+        balance: newBalance,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+  async getPayments(query: any) {
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = query;
+
+    const filter: any = {};
+
+    if (status) {
+      filter.status = status;
     }
 
-    return payment;
-  }
-
-  async handleFail(transactionId: string) {
-    const payment = await this.paymentModel
-      .findOne({ transactionId })
-      .exec();
-
-    if (payment) {
-      payment.status = PaymentStatus.FAILED;
-      await payment.save();
+    // 🔍 search by name, email, phone (user)
+    if (search) {
+      filter.$or = [
+        { 'userId.name': { $regex: search, $options: 'i' } },
+        { 'userId.email': { $regex: search, $options: 'i' } },
+        { 'userId.phone': { $regex: search, $options: 'i' } },
+      ];
     }
 
-    return payment;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const payments = await this.paymentModel
+      .find(filter)
+      .populate('userId', 'name email phone')
+      .populate('approvedBy', 'name role')
+      .populate('rejectedBy', 'name role')
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await this.paymentModel.countDocuments(filter);
+
+    return {
+      data: payments,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit),
+      },
+    }
   }
 
-  async findByUser(userId: string) {
-    return this.paymentModel
-      .find({ userId })
-      .populate('projectId', 'name thumbnail')
-      .sort({ createdAt: -1 })
-      .exec();
+  // ===============================
+  // INVOICE GENERATOR
+  // ===============================
+  private generateInvoiceNumber(): string {
+    const year = new Date().getFullYear();
+    const random = Math.floor(100000 + Math.random() * 900000);
+    return `INV-${year}-${random}`;
   }
 
-  async findByProject(projectId: string) {
-    return this.paymentModel
-      .find({ projectId, status: PaymentStatus.PAID })
-      .populate('userId', 'name email')
-      .sort({ createdAt: -1 })
-      .exec();
-  }
 
-  async findPendingMembershipPayments() {
-    return this.paymentModel
-      .find({
-        type: PaymentType.MEMBERSHIP,
-        status: PaymentStatus.PENDING,
-      })
-      .populate('userId', 'name email phone avatar')
-      .sort({ createdAt: -1 })
-      .exec();
-  }
+
 }

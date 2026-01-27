@@ -8,6 +8,7 @@ export enum TransactionType {
 
 @Schema({ timestamps: true })
 export class FundTransaction extends Document {
+
   @Prop({ type: String, enum: TransactionType, required: true })
   type: TransactionType;
 
@@ -17,17 +18,26 @@ export class FundTransaction extends Document {
   @Prop({ required: true, trim: true })
   reason: string;
 
-  @Prop({ required: true, default: Date.now })
-  date: Date;
-
   @Prop({ required: true })
-  balanceSnapshot: number; // Balance AFTER this transaction
+  balanceSnapshot: number;
+
+  // 🔗 REAL RELATION WITH PAYMENT
+  @Prop({ type: Types.ObjectId, ref: 'Payment', required: true })
+  paymentId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
 }
 
-export const FundTransactionSchema = SchemaFactory.createForClass(FundTransaction);
+// ✅ CREATE SCHEMA
+export const FundTransactionSchema =
+  SchemaFactory.createForClass(FundTransaction);
 
-// Index for getting recent history efficiently
-FundTransactionSchema.index({ date: -1 });
+// ✅ UNIQUE INDEX (VERY IMPORTANT)
+FundTransactionSchema.index(
+  { paymentId: 1 },
+  { unique: true }
+);
+
+// optional but recommended
+FundTransactionSchema.index({ createdAt: -1 });

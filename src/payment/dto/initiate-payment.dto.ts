@@ -1,32 +1,30 @@
 import {
-  IsNotEmpty,
-  IsString,
-  IsNumber,
   IsEnum,
-  Min,
+  IsNotEmpty,
+  IsNumber,
   IsOptional,
+  IsPositive,
+  IsString,
 } from 'class-validator';
-import { PaymentMethod, PaymentType } from '../schemas/payment.schema';
+import { PaymentMethod, PaymentPurpose } from '../schemas/payment.schema';
 
 export class InitiatePaymentDto {
-  @IsOptional()
-  @IsString()
-  projectId?: string;
-
-  @IsNotEmpty()
   @IsNumber()
-  @Min(1)
+  @IsPositive()
   amount: number;
 
-  @IsNotEmpty()
   @IsEnum(PaymentMethod)
   method: PaymentMethod;
 
+  @IsEnum(PaymentPurpose)
+  purpose: PaymentPurpose;
+
+  // manual payments only
   @IsOptional()
-  @IsEnum(PaymentType)
-  type?: PaymentType;
+  @IsString()
+  transactionId?: string;
 
   @IsOptional()
   @IsString()
-  description?: string;
+  senderNumber?: string;
 }

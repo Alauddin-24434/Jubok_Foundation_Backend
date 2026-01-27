@@ -2,22 +2,27 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 export enum PaymentMethod {
-  BKASH = 'bkash',
-  NAGAD = 'nagad',
-  BANK = 'bank',
-  CARD = 'card',
+  CASH = 'CASH',
+  BKASH = 'BKASH',
+  NAGAD = 'NAGAD',
+  BANK = 'BANK',
+  CARD = 'CARD',
 }
 
 export enum PaymentStatus {
-  PENDING = 'pending',
-  PAID = 'paid',
-  FAILED = 'failed',
-  REFUNDED = 'refunded',
+  INITIATED = 'INITIATED',
+  PENDING = 'PENDING',
+
+  PAID = 'PAID',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED',
+  REFUNDED = 'REFUNDED',
 }
 
-export enum PaymentType {
-  MEMBERSHIP = 'membership',
-  PROJECT = 'project',
+export enum PaymentPurpose {
+  MONTHLY = 'MONTHLY',
+  ACCOUNT_ACTIVATION = 'ACCOUNT_ACTIVATION',
+  ONE_TIME = 'ONE_TIME',
 }
 
 @Schema({ timestamps: true })
@@ -25,49 +30,47 @@ export class Payment extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Project', required: false })
-  projectId: Types.ObjectId;
-
-  @Prop({ required: true })
+  @Prop({ required: true, min: 0 })
   amount: number;
 
   @Prop({ type: String, enum: PaymentMethod, required: true })
   method: PaymentMethod;
 
-  @Prop({ type: String, enum: PaymentType, default: PaymentType.PROJECT })
-  type: PaymentType;
+  @Prop({ type: String, enum: PaymentPurpose, required: true })
+  purpose: PaymentPurpose;
 
   @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.PENDING })
   status: PaymentStatus;
 
-  @Prop({ default: null })
-  transactionId: string;
+  // bkash trx / nagad trx / bank ref / gateway trx
+  @Prop({ trim: true })
+  transactionId?: string;
 
-  @Prop({ default: null })
-  bkashNumber: string;
+  // manual payment sender number
+  @Prop({ trim: true })
+  senderNumber?: string;
 
-  @Prop({ default: null })
-  gatewayTransactionId: string;
+  @Prop({ trim: true })
+  invoiceNumber?: string;
 
-  @Prop({ default: null })
-  bankTranId: string;
+  @Prop()
+  paidAt?: Date;
 
-  @Prop({ type: Object, default: {} })
-  gatewayResponse: Record<string, any>;
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  approvedBy?: Types.ObjectId;
 
-  @Prop({ default: null })
-  paidAt: Date;
+  // ❌ REJECTION INFO (NEW)
+  @Prop({ trim: true })
+  rejectReason?: string;
 
-  @Prop({ default: '' })
-  description: string;
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  rejectedBy?: Types.ObjectId;
 
-  @Prop({ default: null })
-  invoiceNumber: string;
+  @Prop()
+  approvedAt?: Date;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);
 
-// Index for efficient queries
-PaymentSchema.index({ userId: 1, projectId: 1 });
-PaymentSchema.index({ status: 1, createdAt: -1 });
 PaymentSchema.index({ transactionId: 1 }, { unique: true, sparse: true });
+PaymentSchema.index({ userId: 1, createdAt: -1 });

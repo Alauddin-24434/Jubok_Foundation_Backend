@@ -5,7 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { getDatabaseConfig } from './config/database.config';
 import { AuthModule } from './auth/auth.module';
 import { ProjectModule } from './project/project.module';
-import { JoinRequestModule } from './join-request/join-request.module';
+
 import { PaymentModule } from './payment/payment.module';
 import { BannerModule } from './banner/banner.module';
 import { UserModule } from './user/user.module';
@@ -44,7 +44,6 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
     AuthModule,
     UserModule,
     ProjectModule,
-    JoinRequestModule,
     PaymentModule,
     BannerModule,
     StatsModule,

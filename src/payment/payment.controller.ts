@@ -1,93 +1,55 @@
 import {
   Controller,
   Post,
-  Get,
   Patch,
   Body,
-  Query,
   UseGuards,
   Request,
   Param,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+
 import { PaymentService } from './payment.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
-import { VerifyPaymentDto } from './dto/verify-payment.dto';
+
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../user/schemas/user.schema';
+import { PaymentStatus } from './schemas/payment.schema';
 
 @Controller('payments')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
+  // ===============================
+  // USER → INITIATE PAYMENT
+  // ===============================
   @Post('initiate')
   @UseGuards(AuthGuard('jwt'))
-  initiatePayment(
-    @Body() initiatePaymentDto: InitiatePaymentDto,
-    @Request() req,
-  ) {
-    return this.paymentService.initiatePayment(
-      initiatePaymentDto,
-      req.user._id,
-      req.user,
-    );
+  initiatePayment(@Body() dto: InitiatePaymentDto, @Request() req) {
+    return this.paymentService.initiatePayment(req.user._id, dto);
   }
 
-  @Post('verify')
-  @UseGuards(AuthGuard('jwt'))
-  verifyPayment(
-    @Body() verifyPaymentDto: VerifyPaymentDto,
-    @Request() req,
-  ) {
-    return this.paymentService.verifyMembershipPayment(
-      verifyPaymentDto,
-      req.user._id,
-    );
+  // 🔐 ADMIN / SUPER ADMIN / MODERATOR
+  @Get()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MODERATOR)
+  getPayments(@Query() query: any) {
+    return this.paymentService.getPayments(query);
   }
 
+  // ===============================
+  // ADMIN → APPROVE PAYMENT
+  // ===============================
   @Patch(':id/approve')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  approvePayment(@Param('id') id: string) {
-    return this.paymentService.approvePayment(id);
-  }
-
-  @Post('success')
-  handleSuccess(@Body() body: any, @Query() query: any) {
-    const transactionId = query.tran_id || body.tran_id;
-    return this.paymentService.handleSuccess(transactionId, body);
-  }
-
-  @Post('fail')
-  handleFail(@Query() query: any) {
-    const transactionId = query.tran_id;
-    return this.paymentService.handleFail(transactionId);
-  }
-
-  @Post('cancel')
-  handleCancel(@Query() query: any) {
-    const transactionId = query.tran_id;
-    return this.paymentService.handleFail(transactionId);
-  }
-
-  @Get('my-payments')
-  @UseGuards(AuthGuard('jwt'))
-  findMyPayments(@Request() req) {
-    return this.paymentService.findByUser(req.user._id);
-  }
-
-  @Get('project/:projectId')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR)
-  findByProject(@Param('projectId') projectId: string) {
-    return this.paymentService.findByProject(projectId);
-  }
-
-  @Get('admin/pending-membership')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR)
-  findPendingMembershipPayments() {
-    return this.paymentService.findPendingMembershipPayments();
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  approvePayment(@Param('id') paymentId: string, @Request() req) {
+    return this.paymentService.approvePayment(
+      paymentId,
+      req.user._id, // admin id
+    );
   }
 }

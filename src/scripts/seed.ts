@@ -2,16 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { UserService } from '../user/user.service';
 import { UserRole } from '../user/schemas/user.schema';
-import * as mongoose from 'mongoose';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const userService = app.get(UserService);
 
   const adminData = {
-    name: 'Super Admin',
-    email: 'admin@alhamdulillah.com',
-    password: 'adminpassword123',
+    name: 'Alauddin',
+    email: 'superadmin@gmail.com',
+    password: '123456',
     role: UserRole.SUPER_ADMIN,
   };
 

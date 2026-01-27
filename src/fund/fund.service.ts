@@ -66,6 +66,11 @@ export class FundService {
         currentBalance: 0,
       };
     }
+    console.log({
+       totalIncome: result[0].totalIncome,
+      totalExpense: result[0].totalExpense,
+      currentBalance,
+    })
 
     return {
       totalIncome: result[0].totalIncome,

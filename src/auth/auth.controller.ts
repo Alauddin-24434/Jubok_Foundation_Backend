@@ -63,7 +63,7 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async me(@ReqDecorator() req: Request) {
-    console.log('✅ req.user:', req.user);
+    // console.log('✅ req.user:', req.user);
 
     const user = req.user as JwtUser;
 

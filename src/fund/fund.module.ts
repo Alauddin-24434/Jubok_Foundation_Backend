@@ -10,6 +10,6 @@ import { FundTransaction, FundTransactionSchema } from './schemas/fund-transacti
   ],
   controllers: [FundController],
   providers: [FundService],
-  exports: [FundService],
+  exports: [FundService, MongooseModule],
 })
 export class FundModule {}

@@ -3,17 +3,17 @@ import { Document } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
 export enum UserRole {
-  SUPER_ADMIN = 'SuperAdmin',
-  ADMIN = 'Admin',
-  MODERATOR = 'Moderator',
-  USER = 'User',
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  ADMIN = 'ADMIN',
+  MODERATOR = 'MODERATOR',
+  USER = 'USER',
 }
 
 export enum UserStatus {
-  ACTIVE = 'active',
-  PENDING = 'pending',
-  INACTIVE = 'inactive',
-  SUSPENDED = 'suspended',
+  ACTIVE = 'ACTIVE',
+  PENDING = 'PENDING',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED',
 }
 
 @Schema({ timestamps: true })
@@ -33,12 +33,13 @@ export class User extends Document {
   @Prop({ type: [String], default: [] })
   permissions: string[];
 
-  @Prop({ default: null })
+  @Prop()
   avatar: string;
 
   @Prop({ default: null })
   phone: string;
-
+  @Prop({ default: null })
+  cityState: string;
   @Prop({ default: null })
   address: string;
 
@@ -61,7 +62,6 @@ UserSchema.pre('save', async function () {
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
-
 
 // Method to compare password
 UserSchema.methods.comparePassword = async function (

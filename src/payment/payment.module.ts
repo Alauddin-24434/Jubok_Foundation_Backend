@@ -7,6 +7,7 @@ import { SslcommerzService } from './services/sslcommerz.service';
 import { ProjectModule } from '../project/project.module';
 
 import { User, UserSchema } from '../user/schemas/user.schema';
+import { FundModule } from 'src/fund/fund.module';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { User, UserSchema } from '../user/schemas/user.schema';
       { name: Payment.name, schema: PaymentSchema },
       { name: User.name, schema: UserSchema },
     ]),
-    ProjectModule,
+    FundModule,
   ],
   controllers: [PaymentController],
   providers: [PaymentService, SslcommerzService],
