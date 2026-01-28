@@ -12,7 +12,6 @@ import { CreateManagementDto } from './dto/create-management.dto';
 import { UpdateManagementDto } from './dto/update-management.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-
 @ApiTags('management')
 @ApiBearerAuth()
 @Controller('management')

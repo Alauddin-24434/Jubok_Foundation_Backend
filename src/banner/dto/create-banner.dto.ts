@@ -19,10 +19,6 @@ export class CreateBannerDto {
   @IsString()
   image: string;
 
-  @IsNotEmpty()
-  @IsString()
-  projectRef: string;
-
   @IsOptional()
   @IsNumber()
   displayOrder?: number;

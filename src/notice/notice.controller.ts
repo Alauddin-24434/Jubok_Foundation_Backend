@@ -16,7 +16,7 @@ export class NoticeController {
   // ===========create notice================
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MODERATOR)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   createNotice(@Body() createNoticeDto: CreateNoticeDto, @Req() req) {
     const userId = req.user?._id;
     return this.noticeService.createNotice(createNoticeDto, userId);

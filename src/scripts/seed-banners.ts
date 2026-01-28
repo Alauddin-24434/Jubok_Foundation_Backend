@@ -67,7 +67,6 @@ async function bootstrap() {
         title: bannerInfo.title,
         description: bannerInfo.description,
         image: bannerInfo.image,
-        projectRef: project._id.toString(),
         displayOrder: bannerInfo.displayOrder,
         isActive: true,
       });

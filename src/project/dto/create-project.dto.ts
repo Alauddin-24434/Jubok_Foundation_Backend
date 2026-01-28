@@ -35,7 +35,7 @@ export class CreateProjectDto {
   @IsDateString()
   startDate: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsDateString()
   endDate: string;
 

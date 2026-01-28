@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
+  
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn'],
   });
@@ -32,7 +33,9 @@ async function bootstrap() {
       exceptionFactory: (errors) => {
         const result = errors.map((error) => ({
           property: error.property,
-          message: error.constraints ? Object.values(error.constraints)[0] : 'Invalid value',
+          message: error.constraints
+            ? Object.values(error.constraints)[0]
+            : 'Invalid value',
         }));
         return new BadRequestException(result);
       },

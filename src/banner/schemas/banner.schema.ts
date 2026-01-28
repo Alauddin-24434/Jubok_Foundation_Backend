@@ -12,9 +12,6 @@ export class Banner extends Document {
   @Prop({ required: true })
   image: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
-  projectRef: Types.ObjectId;
-
   @Prop({ default: true })
   isActive: boolean;
 

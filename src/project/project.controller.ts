@@ -21,7 +21,6 @@ import { UserRole } from '../user/schemas/user.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-
 @ApiTags('Projects')
 @ApiBearerAuth()
 @Controller('projects')

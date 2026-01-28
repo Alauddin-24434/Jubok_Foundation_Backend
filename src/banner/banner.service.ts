@@ -16,16 +16,12 @@ export class BannerService {
   async findAll() {
     return this.bannerModel
       .find({ isActive: true })
-      .populate('projectRef', 'name thumbnail status')
       .sort({ displayOrder: 1 })
       .exec();
   }
 
   async findOne(id: string) {
-    const banner = await this.bannerModel
-      .findById(id)
-      .populate('projectRef')
-      .exec();
+    const banner = await this.bannerModel.findById(id).exec();
 
     if (!banner) {
       throw new NotFoundException('Banner not found');

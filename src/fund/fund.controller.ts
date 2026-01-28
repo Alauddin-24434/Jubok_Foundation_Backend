@@ -41,7 +41,7 @@ export class FundController {
   }
 
   @Get('history')
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN,)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   getHistory(@Query('limit') limit: number) {
     return this.fundService.getHistory(limit);
   }

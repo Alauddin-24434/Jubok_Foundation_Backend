@@ -45,8 +45,8 @@ export class Project extends Document {
   @Prop({ required: true })
   startDate: Date;
 
-  @Prop({ required: true })
-  endDate: Date;
+  @Prop()
+  endDate?: Date;
 
   // initiate invesnment
   @Prop({ required: true })

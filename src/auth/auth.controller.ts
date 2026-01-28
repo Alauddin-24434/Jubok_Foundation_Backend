@@ -42,6 +42,7 @@ export class AuthController {
     @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    console.log('hi');
     const { user, accessToken, refreshToken } =
       await this.authService.register(registerDto);
 
@@ -132,5 +133,21 @@ export class AuthController {
       return this.statsService.getAdminStats();
     }
     return this.statsService.getUserStats(user._id);
+  }
+
+  /* ================= LOGOUT ================= */
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: false, // dev → false
+      sameSite: 'lax',
+    });
+
+    return {
+      success: true,
+      message: 'Logged out successfully',
+    };
   }
 }

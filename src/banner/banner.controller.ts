@@ -16,7 +16,6 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../user/schemas/user.schema';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-
 @ApiTags('Banners')
 @ApiBearerAuth()
 @Controller('banners')

@@ -16,7 +16,6 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from './schemas/user.schema';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-
 @ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
@@ -39,7 +38,7 @@ export class UserController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
   async update(@Param('id') id: string, @Body() updateData: any) {
     return this.userService.update(id, updateData);
   }

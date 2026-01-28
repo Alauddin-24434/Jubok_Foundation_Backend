@@ -37,7 +37,7 @@ export class PaymentController {
   // 🔐 ADMIN / SUPER ADMIN / MODERATOR
   @Get()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MODERATOR)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   getPayments(@Query() query: any) {
     return this.paymentService.getPayments(query);
   }
