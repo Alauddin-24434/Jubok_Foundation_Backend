@@ -7,9 +7,8 @@ import cookieParser from 'cookie-parser';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
-  
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn'],
+    logger: ['error', 'warn'], // 🔥 clean output
   });
 
   const configService = app.get(ConfigService);
@@ -18,7 +17,8 @@ async function bootstrap() {
   app.use(helmet());
 
   app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL') || '*',
+    origin:
+      configService.get<string>('FRONTEND_URL') || 'http://localhost:3000',
     credentials: true,
   });
 
@@ -29,7 +29,9 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      transformOptions: { enableImplicitConversion: true },
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
       exceptionFactory: (errors) => {
         const result = errors.map((error) => ({
           property: error.property,
@@ -37,31 +39,31 @@ async function bootstrap() {
             ? Object.values(error.constraints)[0]
             : 'Invalid value',
         }));
+        console.error('Validation Errors:', JSON.stringify(result, null, 2));
         return new BadRequestException(result);
       },
     }),
   );
-
-  // Swagger
+ 
+  // Swagger Configuration
   const config = new DocumentBuilder()
     .setTitle('Alhamdulillah Foundation API')
+    .setDescription('The API documentation for Alhamdulillah Foundation backend')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
+
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
 
-  // THIS IS THE KEY CHANGE FOR VERCEL:
-  // We don't call app.listen() if we're running as a serverless function
-  if (process.env.NODE_ENV !== 'production') {
-    const port = configService.get<number>('PORT') || 5000;
-    await app.listen(port);
-  }
+  const port = configService.get<number>('PORT') || 5000;
+  await app.listen(port);
 
-  // Export the express instance for Vercel
-  await app.init();
-  return app.getHttpAdapter().getInstance();
+  console.log(`🚀 Application is running on: http://localhost:${port}/api`);
+  console.log(`📜 Documentation available at: http://localhost:${port}/docs`);
 }
-
-// Export a handler for Vercel
-export default bootstrap();
+bootstrap();
