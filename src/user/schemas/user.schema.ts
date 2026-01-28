@@ -5,7 +5,6 @@ import * as bcrypt from 'bcrypt';
 export enum UserRole {
   SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
-  MODERATOR = 'MODERATOR',
   MEMBER = 'MEMBER',
   GUEST = 'GUEST',
 }
@@ -13,7 +12,6 @@ export enum UserRole {
 export enum UserStatus {
   ACTIVE = 'ACTIVE',
   PENDING = 'PENDING',
-  INACTIVE = 'INACTIVE',
   SUSPENDED = 'SUSPENDED',
 }
 
