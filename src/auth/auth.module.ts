@@ -30,6 +30,7 @@ import { Payment, PaymentSchema } from 'src/payment/schemas/payment.schema';
       { name: User.name, schema: UserSchema },
       { name: Payment.name, schema: PaymentSchema },
     ]),
+ 
 
     StatsModule,
   ],

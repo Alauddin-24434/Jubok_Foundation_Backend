@@ -11,6 +11,7 @@ import {
   FundTransaction,
   FundTransactionSchema,
 } from 'src/fund/schemas/fund-transaction.schema';
+import { SocketModule } from 'src/socket/socket.module';
 
 @Module({
   imports: [
@@ -20,6 +21,8 @@ import {
       { name: User.name, schema: UserSchema },
     ]),
     FundModule,
+       SocketModule,
+    
   ],
   controllers: [PaymentController],
   providers: [PaymentService, SslcommerzService],

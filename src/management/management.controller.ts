@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { ManagementService } from './management.service';
 import { CreateManagementDto } from './dto/create-management.dto';
@@ -23,10 +24,23 @@ export class ManagementController {
     return this.managementService.create(createManagementDto);
   }
 
-  @Get()
-  findAll() {
-    return this.managementService.findAll();
-  }
+// management.controller.ts
+@Get()
+findAll(
+  @Query('page') page: number = 1,
+  @Query('limit') limit: number = 10,
+  @Query('sortBy') sortBy: string = 'createdAt',
+  @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
+  @Query('search') search?: string,
+) {
+  return this.managementService.findAll({
+    page: Number(page),
+    limit: Number(limit),
+    sortBy,
+    sortOrder,
+    search,
+  });
+}
 
   @Get(':id')
   findOne(@Param('id') id: string) {

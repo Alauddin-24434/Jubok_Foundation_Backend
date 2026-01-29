@@ -21,11 +21,11 @@ export class NotificationService {
     // 1. If recipient is specified, send to that user's room
     // 2. If no recipient (global), send to all
     
-    if (createNotificationDto.recipient) {
-       this.appGateway.server.to(createNotificationDto.recipient).emit('receive_notification', notification);
-    } else {
-       this.appGateway.server.emit('receive_notification', notification);
-    }
+    // if (createNotificationDto.recipient) {
+    //    this.appGateway.server.to(createNotificationDto.recipient).emit('receive_notification', notification);
+    // } else {
+    //    this.appGateway.server.emit('receive_notification', notification);
+    // }
     
     return notification;
   }
