@@ -16,12 +16,13 @@ export class ManagementService {
   ) {}
 
   async create(createManagementDto: CreateManagementDto): Promise<Management> {
-    const createdManagement = new this.managementModel(createManagementDto);
-    return createdManagement.save();
+    const created = new this.managementModel(createManagementDto);
+    return created.save();
   }
 
-  // management.service.ts
-  async findAll(query: ManagementQueryDto): Promise<{
+  async findAll(
+    query: ManagementQueryDto = {}, // 🔥 CRITICAL FIX
+  ): Promise<{
     data: Management[];
     meta: {
       total: number;
@@ -42,7 +43,6 @@ export class ManagementService {
 
     /* 🔍 Search */
     const filter: any = {};
-
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -51,7 +51,7 @@ export class ManagementService {
       ];
     }
 
-    /* ↕️ Sorting */
+    /* ↕️ Sort */
     const sortCondition: Record<string, SortOrder> = {
       [sortBy]: sortOrder === 'asc' ? 1 : -1,
     };
@@ -65,7 +65,6 @@ export class ManagementService {
         .limit(limit)
         .lean()
         .exec(),
-
       this.managementModel.countDocuments(filter),
     ]);
 
@@ -85,6 +84,7 @@ export class ManagementService {
       .findById(id)
       .populate('userId')
       .exec();
+
     if (!management) {
       throw new NotFoundException(`Management record with ID ${id} not found`);
     }
@@ -93,24 +93,26 @@ export class ManagementService {
 
   async update(
     id: string,
-    updateManagementDto: UpdateManagementDto,
+    updateDto: UpdateManagementDto,
   ): Promise<Management> {
-    const updatedManagement = await this.managementModel
-      .findByIdAndUpdate(id, updateManagementDto, { new: true })
+    const updated = await this.managementModel
+      .findByIdAndUpdate(id, updateDto, { new: true })
       .exec();
-    if (!updatedManagement) {
+
+    if (!updated) {
       throw new NotFoundException(`Management record with ID ${id} not found`);
     }
-    return updatedManagement;
+    return updated;
   }
 
   async remove(id: string): Promise<Management> {
-    const deletedManagement = await this.managementModel
+    const deleted = await this.managementModel
       .findByIdAndDelete(id)
       .exec();
-    if (!deletedManagement) {
+
+    if (!deleted) {
       throw new NotFoundException(`Management record with ID ${id} not found`);
     }
-    return deletedManagement;
+    return deleted;
   }
 }

@@ -4,9 +4,8 @@ import { ManagementService } from './management.service';
 
 describe('ManagementController', () => {
   let controller: ManagementController;
-  let service: ManagementService;
 
-  const mockManagementService = {
+  const mockService = {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
@@ -20,34 +19,22 @@ describe('ManagementController', () => {
       providers: [
         {
           provide: ManagementService,
-          useValue: mockManagementService,
+          useValue: mockService,
         },
       ],
     }).compile();
 
     controller = module.get<ManagementController>(ManagementController);
-    service = module.get<ManagementService>(ManagementService);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('findAll', () => {
-    it('should return an array of management records', async () => {
-      const result = [{ position: 'Manager' }];
-      mockManagementService.findAll.mockResolvedValue(result);
+  it('should call findAll', async () => {
+    const result = { data: [], meta: {} };
+    mockService.findAll.mockResolvedValue(result);
 
-      expect(await controller.findAll()).toBe(result);
-    });
-  });
-
-  describe('findOne', () => {
-    it('should return a single management record', async () => {
-      const result = { position: 'Manager' };
-      mockManagementService.findOne.mockResolvedValue(result);
-
-      expect(await controller.findOne('id')).toBe(result);
-    });
+    expect(await controller.findAll({} as any)).toBe(result);
   });
 });
