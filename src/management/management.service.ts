@@ -17,69 +17,68 @@ export class ManagementService {
     return createdManagement.save();
   }
 
-// management.service.ts
-async findAll({
-  page,
-  limit,
-  sortBy,
-  sortOrder,
-  search,
-}: {
-  page: number;
-  limit: number;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-  search?: string;
-}): Promise<{
-  data: Management[];
-  meta: {
-    total: number;
+  // management.service.ts
+  async findAll({
+    page = 1,
+    limit = 10,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+    search,
+  }: {
     page: number;
     limit: number;
-    totalPage: number;
-  };
-}> {
-  const skip = (page - 1) * limit;
-
-  // 🔍 Search condition
-  const query: any = {};
-
-  if (search) {
-    query.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { email: { $regex: search, $options: 'i' } },
-      { phone: { $regex: search, $options: 'i' } },
-    ];
-  }
-
-  // ↕️ Sorting
-  const sortCondition: any = {
-    [sortBy]: sortOrder === 'asc' ? 1 : -1,
-  };
-
-  const [data, total] = await Promise.all([
-    this.managementModel
-      .find(query)
-      .populate('userId')
-      .sort(sortCondition)
-      .skip(skip)
-      .limit(limit)
-      .exec(),
-
-    this.managementModel.countDocuments(query),
-  ]);
-
-  return {
-    data,
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+    search?: string;
+  }): Promise<{
+    data: Management[];
     meta: {
-      total,
-      page,
-      limit,
-      totalPage: Math.ceil(total / limit),
-    },
-  };
-}
+      total: number;
+      page: number;
+      limit: number;
+      totalPage: number;
+    };
+  }> {
+    const skip = (page - 1) * limit;
 
+    // 🔍 Search condition
+    const query: any = {};
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    // ↕️ Sorting
+    const sortCondition: any = {
+      [sortBy]: sortOrder === 'asc' ? 1 : -1,
+    };
+
+    const [data, total] = await Promise.all([
+      this.managementModel
+        .find(query)
+        .populate('userId')
+        .sort(sortCondition)
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+
+      this.managementModel.countDocuments(query),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPage: Math.ceil(total / limit),
+      },
+    };
+  }
 
   async findOne(id: string): Promise<Management> {
     const management = await this.managementModel
