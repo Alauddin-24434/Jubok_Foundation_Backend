@@ -19,6 +19,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+
 export interface JwtUser {
   _id: string;
   email: string;
@@ -33,6 +34,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly statsService: StatsService,
+  
   ) {}
 
   /* ================= REGISTER ================= */
@@ -79,6 +81,9 @@ export class AuthController {
       sameSite: 'lax', // 🔥 KEY FIX
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+
+
+
 
     return {
       success: true,

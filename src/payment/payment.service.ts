@@ -15,6 +15,7 @@ import {
 
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { User, UserRole, UserStatus } from '../user/schemas/user.schema';
+import { AppGateway } from 'src/socket/socket.gateway';
 
 @Injectable()
 export class PaymentService {
@@ -30,6 +31,7 @@ export class PaymentService {
 
     @InjectConnection()
     private readonly connection: Connection,
+    private readonly gateway: AppGateway
   ) {}
 
   // ===============================
@@ -57,6 +59,8 @@ export class PaymentService {
       status: PaymentStatus.PENDING,
       senderNumber: dto.senderNumber,
     });
+
+ 
 
     return {
       message:

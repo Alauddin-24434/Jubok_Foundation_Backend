@@ -9,3 +9,13 @@ export class CreateNoticeDto {
   @IsString()
   fileUrl: string;
 }
+
+export class UpdateNoticeDto {
+  @IsNotEmpty()
+  @IsString()
+  title: string;
+
+  @IsNotEmpty()
+  @IsString()
+  fileUrl: string;
+}

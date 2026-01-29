@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { User } from './schemas/user.schema';
+import { User, UserStatus } from './schemas/user.schema';
 import { Model } from 'mongoose';
 
 @Injectable()
@@ -11,6 +11,7 @@ export class UserService {
     const { role, search } = query || {};
     const filter: any = {};
 
+     filter.status= {$ne : UserStatus.PENDING}
     if (role) {
       filter.role = role;
     }
