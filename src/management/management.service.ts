@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, SortOrder } from 'mongoose';
 import { Management } from './schemas/management.schema';
-import { CreateManagementDto } from './dto/create-management.dto';
+import {
+  CreateManagementDto,
+  ManagementQueryDto,
+} from './dto/create-management.dto';
 import { UpdateManagementDto } from './dto/update-management.dto';
 
 @Injectable()
@@ -18,19 +21,7 @@ export class ManagementService {
   }
 
   // management.service.ts
-  async findAll({
-    page = 1,
-    limit = 10,
-    sortBy = 'createdAt',
-    sortOrder = 'desc',
-    search,
-  }: {
-    page: number;
-    limit: number;
-    sortBy: string;
-    sortOrder: 'asc' | 'desc';
-    search?: string;
-  }): Promise<{
+  async findAll(query: ManagementQueryDto): Promise<{
     data: Management[];
     meta: {
       total: number;
@@ -39,34 +30,43 @@ export class ManagementService {
       totalPage: number;
     };
   }> {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search,
+    } = query;
+
     const skip = (page - 1) * limit;
 
-    // 🔍 Search condition
-    const query: any = {};
+    /* 🔍 Search */
+    const filter: any = {};
 
     if (search) {
-      query.$or = [
+      filter.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
         { phone: { $regex: search, $options: 'i' } },
       ];
     }
 
-    // ↕️ Sorting
-    const sortCondition: any = {
+    /* ↕️ Sorting */
+    const sortCondition: Record<string, SortOrder> = {
       [sortBy]: sortOrder === 'asc' ? 1 : -1,
     };
 
     const [data, total] = await Promise.all([
       this.managementModel
-        .find(query)
+        .find(filter)
         .populate('userId')
         .sort(sortCondition)
         .skip(skip)
         .limit(limit)
+        .lean()
         .exec(),
 
-      this.managementModel.countDocuments(query),
+      this.managementModel.countDocuments(filter),
     ]);
 
     return {
