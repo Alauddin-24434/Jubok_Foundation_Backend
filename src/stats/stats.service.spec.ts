@@ -10,8 +10,15 @@ describe('StatsService', () => {
   let service: StatsService;
 
   const mockUserModel: any = { countDocuments: jest.fn() };
-  const mockProjectModel: any = { countDocuments: jest.fn() };
-  const mockPaymentModel: any = { aggregate: jest.fn() };
+  const mockProjectModel: any = { countDocuments: jest.fn(), aggregate: jest.fn() };
+  const mockPaymentModel: any = { 
+    aggregate: jest.fn(),
+    find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        populate: jest.fn().mockResolvedValue([]),
+    }),
+  };
   const mockFundModel: any = { findOne: jest.fn() };
 
   beforeEach(async () => {
@@ -53,7 +60,14 @@ describe('StatsService', () => {
             Promise.resolve(5).then(onFulfilled),
           ),
       }));
-      mockPaymentModel.aggregate.mockResolvedValue([{ total: 1000 }]);
+      
+      // Mock aggregations
+      mockProjectModel.aggregate.mockResolvedValue([]); // For project distribution
+      
+      mockPaymentModel.aggregate
+          .mockResolvedValueOnce([{ total: 1000 }]) // For totalRaised (first call)
+          .mockResolvedValueOnce([]); // For monthlyStats (second call)
+
       mockFundModel.findOne.mockImplementation(() => ({
         sort: jest.fn().mockReturnThis(),
         exec: jest.fn().mockResolvedValue({ balanceSnapshot: 500 }),
@@ -67,7 +81,7 @@ describe('StatsService', () => {
       const stats = await service.getAdminStats();
       expect(stats.totalUsers).toBe(10);
       expect(stats.totalProjects).toBe(5);
-      expect(stats.totalDonations).toBe(1000);
+      expect(stats.totalRaised).toBe(1000);
       expect(stats.currentBalance).toBe(500);
     });
   });

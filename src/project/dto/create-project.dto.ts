@@ -42,7 +42,7 @@ export class CreateProjectDto {
   @IsNotEmpty()
   @IsNumber()
   @Min(0)
-  intialInvestment: number;
+  initialInvestment: number;
 
   @IsNotEmpty()
   @IsString()

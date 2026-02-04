@@ -48,9 +48,11 @@ export class Project extends Document {
   @Prop()
   endDate?: Date;
 
-  // initiate invesnment
   @Prop({ required: true })
-  intialInvestment: number;
+  initialInvestment: number;
+
+  @Prop({ default: 0 })
+  memberCount: number;
 
   @Prop({ required: true })
   category: string;

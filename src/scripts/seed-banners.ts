@@ -13,7 +13,7 @@ async function bootstrap() {
     const projectService = app.get(ProjectService);
 
     // 1. Get existing projects to link
-    const projectsResult = await projectService.findAll({ limit: 5 });
+    const projectsResult: any = await projectService.findAll({ limit: 5 });
     const projects = projectsResult.data;
 
     if (!projects || projects.length === 0) {

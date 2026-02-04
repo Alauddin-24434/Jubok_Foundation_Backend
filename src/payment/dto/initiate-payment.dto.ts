@@ -18,13 +18,4 @@ export class InitiatePaymentDto {
 
   @IsEnum(PaymentPurpose)
   purpose: PaymentPurpose;
-
-  // manual payments only
-  @IsOptional()
-  @IsString()
-  transactionId?: string;
-
-  @IsOptional()
-  @IsString()
-  senderNumber?: string;
 }

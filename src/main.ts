@@ -5,14 +5,24 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import bodyParser from 'body-parser';
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn'], // 🔥 clean output
   });
+  
 
   const configService = app.get(ConfigService);
+app.useStaticAssets(join(__dirname, '..', 'public'));
 
+  // 🔥 Stripe Webhook RAW body
+  app.use(
+    '/api/payments/stripe/webhook',
+    bodyParser.raw({ type: 'application/json' }),
+  );
   app.use(cookieParser());
   app.use(helmet());
 

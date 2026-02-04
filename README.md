@@ -1,160 +1,180 @@
-# Alhamdulillah Foundation - Backend API
+# Jubok Foundation - Backend API
 
-NestJS-based REST API for the Alhamdulillah Foundation investment management platform.
+NestJS-based REST API for the Jubok Foundation investment management platform.
 
 ## Features
 
-- 🔐 **JWT Authentication** - Secure user registration and login
-- 👥 **Role-Based Access Control** - 4 user roles (Super Admin, Admin, Moderator, User)
-- 📝 **Project Management** - Full CRUD for investment projects
-- 🤝 **Join Request System** - Users can request to join projects
-- 💳 **Payment Integration** - SSLCommerz (Bangladesh payment gateway)
-- 🎯 **Banner Management** - Featured project banners
-- 📊 **MongoDB + Mongoose** - Robust data persistence
-- ⚡ **Redis Ready** - Prepared for caching
-- 🛡️ **Security** - Helmet, rate limiting, validation
+- 🔐 **Authentication & Authorization**
+  - JWT-based secure authentication
+  - Role-Based Access Control (RBAC): Super Admin, Admin, Moderator, User
+- 👥 **User Management**
+  - Profile management
+  - Role assignment
+- 🏗️ **Project Management**
+  - Full CRUD for investment projects
+  - Member management and tracking
+- 🤝 **Join Request System**
+  - Workflow for users to request joining projects
+  - Approval/Rejection process by Admins
+- 💰 **Fund Management**
+  - Income and Expense tracking
+  - Expense Request system with approval workflow
+  - Financial summaries and history
+- 📢 **Notice Board**
+  - Site-wide notices and announcements
+  - **Real-time notifications** using Socket.io
+- 💳 **Payment Integration**
+  - **SSLCommerz** (Bangladesh payment gateway)
+  - **Stripe** (International payments)
+  - Manual Bkash verification flow
+- 🎯 **Banner Management**
+  - Dynamic home page banners
+- 📊 **Statistics & Analytics**
+  - Dashboard analytics for admins
+- 💼 **Management Board**
+  - Manage foundation members/staff profiles
+- ⚡ **Performance & Security**
+  - **Redis** caching support
+  - **Helmet** for HTTP headers security
+  - **Throttler** for rate limiting
+  - **Class-Validator** for input validation
 
 ## Tech Stack
 
-- **Framework**: NestJS 10+
-- **Database**: MongoDB with Mongoose
-- **Authentication**: JWT + Passport
+- **Framework**: NestJS 11
+- **Language**: TypeScript
+- **Database**: MongoDB (via Mongoose)
+- **Caching**: Redis (ioredis)
+- **Real-time**: Socket.io
+- **Authentication**: Passport-JWT
 - **Validation**: class-validator, class-transformer
-- **Security**: Helmet, Throttler
-- **Payment**: SSLCommerz
+- **Documentation**: Swagger UI
+- **Payment**: SSLCommerz, Stripe
+
+## Prerequisites
+
+- Node.js (v18 or higher)
+- MongoDB (Local or Atlas)
+- Redis (Optional, for caching)
 
 ## Installation
 
-```bash
-# Install dependencies
-npm install
+1.  **Clone the repository**
+    ```bash
+    git clone <repository_url>
+    cd backend
+    ```
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your actual values
-```
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
 
-## Configuration
+3.  **Set up environment variables**
+    ```bash
+    cp .env.example .env
+    ```
 
-Edit `.env` file with your credentials:
+4.  **Configure `.env`**
+    Update the `.env` file with your credentials:
 
-- **MongoDB**: Update `MONGODB_URI`
-- **JWT**: Change `JWT_SECRET` (use a strong secret in production)
-- **Cloudinary**: Add your credentials for file uploads
-- **SSLCommerz**: Add your payment gateway credentials
+    ```env
+    # Application
+    NODE_ENV=development
+    PORT=5000
+    FRONTEND_URL=http://localhost:3000
+
+    # Database
+    MONGO_URI=mongodb://localhost:27017/jubok_foundation
+    REDIS_URL=
+
+
+    # JWT Security
+    JWT_ACCESS_SECRET=your_super_secret_access_key
+    JWT_REFRESH_SECRET=your_super_secret_refresh_key
+    JWT_ACCESS_EXPIRES=15m
+    JWT_REFRESH_EXPIRES=7d
+
+    # Cloudinary (File Uploads)
+    CLOUDINARY_CLOUD_NAME=your_cloud_name
+    CLOUDINARY_API_KEY=your_api_key
+    CLOUDINARY_API_SECRET=your_api_secret
+
+    # Payment Gateways
+    STRIPE_SECRET_KEY=your_stripe_secret
+    STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+    SSLCOMMERZ_STORE_ID=your_store_id
+    SSLCOMMERZ_STORE_PASS=your_store_password
+    SSLCOMMERZ_IS_LIVE=false
+    ```
 
 ## Running the Application
 
+**Development Mode**
 ```bash
-# Development
 npm run start:dev
+```
 
-# Production
+**Production Mode**
+```bash
 npm run build
 npm run start:prod
 ```
 
-The API will be available at: `http://localhost:3000/api`
+The API will run at `http://localhost:5000/api` (default).
 
-## API Endpoints
+## API Documentation (Swagger)
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
+A full interactive API documentation is available via Swagger UI.
+After starting the application, visit:
 
-### Projects
-- `GET /api/projects` - Get all projects (public)
-- `GET /api/projects/:id` - Get project details
-- `POST /api/projects` - Create project (Admin+)
-- `PATCH /api/projects/:id` - Update project (Admin+)
-- `DELETE /api/projects/:id` - Delete project (Super Admin)
-
-### Join Requests
-- `POST /api/join-requests` - Send join request
-- `GET /api/join-requests/my-requests` - User's requests
-- `GET /api/join-requests/project/:projectId` - Project requests (Admin+)
-- `PATCH /api/join-requests/:id/review` - Approve/Reject (Admin+)
-
-### Payments
-- `POST /api/payments/initiate` - Start payment
-- `GET /api/payments/my-payments` - User's payment history
-- `GET /api/payments/project/:projectId` - Project payments (Admin+)
-
-### Banners
-- `GET /api/banners` - Get active banners (public)
-- `POST /api/banners` - Create banner (Admin+)
-- `PATCH /api/banners/:id` - Update banner (Admin+)
-- `DELETE /api/banners/:id` - Delete banner (Super Admin)
-
-## User Roles & Permissions
-
-### Super Admin
-- Full system access
-- Create/manage projects
-- Manage banners
-- View all payments
-
-### Admin
-- Manage assigned projects
-- Add/remove members
-- Review join requests
-- View payments
-
-### Moderator
-- Approve/reject join requests
-- View project info
-
-### User
-- View projects
-- Send join requests
-- Make payments
+👉 **http://localhost:5000/docs**
 
 ## Project Structure
 
 ```
 src/
-├── auth/              # Authentication module
-├── project/           # Project management
-├── join-request/      # Join request workflow
-├── payment/           # Payment processing
-├── banner/            # Banner management
-├── user/              # User schemas
-├── common/            # Shared guards, decorators
-└── config/            # Configuration files
+├── app.module.ts        # Main application module
+├── main.ts              # Entry point
+├── auth/                # Authentication & JWT
+├── user/                # User management
+├── project/             # Project & Member management
+├── fund/                # Financial transactions & Expense requests
+├── payment/             # Payment gateways (Stripe, SSLCommerz)
+├── notice/              # Notice board with Socket.io updates
+├── banner/              # Banner management
+├── stats/               # Dashboard statistics
+├── management/          # Board members/Staff management
+├── notification/        # Notification system
+├── socket/              # WebSocket gateway
+├── common/              # Shared logic (Guards, Decorators, Filters)
+└── config/              # Configuration files
 ```
 
-## Security Notes
+## Testing
 
-⚠️ **Important for Production**:
-1. Change `JWT_SECRET` to a strong random string
-2. Update MongoDB connection with authentication
-3. Configure proper CORS origins
-4. Add rate limiting values based on your needs
-5. Use environment-specific `.env` files
-6. Enable MongoDB replica sets for transactions
-
-## Payment Integration (Manual Bkash)
-
-The platform supports a manual payment verification flow for membership activation:
-
-1.  User sends money to the provided Bkash number.
-2.  User submits their **Bkash Number** and **Transaction ID** via the dashboard.
-3.  Admin reviews the request in the admin panel (`PATCH /api/payments/:id/approve`).
-4.  Upon approval, the user's status is updated to `active`.
-
-## Development
+Run the test suite using Jest:
 
 ```bash
-# Run tests
+# Unit tests
 npm run test
 
-# Format code
-npm run format
+# e2e tests
+npm run test:e2e
 
-# Lint
-npm run lint
+# Test coverage
+npm run test:cov
 ```
+
+## Security Best Practices
+
+For production deployments:
+1.  **Strict CORS**: Set `FRONTEND_URL` to your actual frontend domain.
+2.  **Strong Secrets**: Use long, random strings for `JWT_SECRET` and Payment keys.
+3.  **Rate Limiting**: Adjust `THROTTLE_TTL` and `THROTTLE_LIMIT` in `app.module.ts` or env.
+4.  **Database Auth**: Ensure MongoDB connection string includes authentication.
+5.  **Secure Headers**: Helmet is enabled by default.
 
 ## License
 
-MIT
+This project is licensed under the MIT License.

@@ -1,204 +1,334 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
-import { InjectModel, InjectConnection } from '@nestjs/mongoose';
-import { Model, Types, Connection } from 'mongoose';
+  Payment,
+  PaymentMethod,
+  PaymentStatus,
+  PaymentPurpose,
+} from './schemas/payment.schema';
+import { StripeGateway } from './getways/stripe/stripe.getway';
 
-import { Payment, PaymentStatus } from './schemas/payment.schema';
-
-import {
-  FundTransaction,
-  TransactionType,
-} from '../fund/schemas/fund-transaction.schema';
-
-import { InitiatePaymentDto } from './dto/initiate-payment.dto';
-import { User, UserRole, UserStatus } from '../user/schemas/user.schema';
-import { AppGateway } from 'src/socket/socket.gateway';
+import { UserService } from 'src/user/user.service';
+import { SslGateway } from './getways/ssl/ssl.gateway';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import Stripe from 'stripe';
+import { ConfigService } from '@nestjs/config';
+import { User, UserRole, UserStatus } from 'src/user/schemas/user.schema';
+import { FundService } from 'src/fund/fund.service';
 
 @Injectable()
 export class PaymentService {
   constructor(
+    private readonly stripeGateway: StripeGateway,
+    private readonly sslGateway: SslGateway,
+    private readonly userService: UserService,
+    private readonly fundService: FundService,
     @InjectModel(Payment.name)
-    private readonly paymentModel: Model<Payment>,
-
-    @InjectModel(FundTransaction.name)
-    private readonly fundModel: Model<FundTransaction>,
-
-    @InjectModel(User.name)
+      private readonly paymentModel: Model<Payment>,
+     @InjectModel(User.name)
     private readonly userModel: Model<User>,
-
-    @InjectConnection()
-    private readonly connection: Connection,
-    private readonly gateway: AppGateway
+    private readonly configService: ConfigService,
   ) {}
 
-  // ===============================
-  // USER → INITIATE PAYMENT
-  // ===============================
-  async initiatePayment(userId: Types.ObjectId, dto: InitiatePaymentDto) {
-    if (!dto.transactionId) {
-      throw new BadRequestException('Transaction ID is required');
-    }
+  async processPayment(
+    userId: string,
+    dto: { method: PaymentMethod; amount: number; purpose: PaymentPurpose },
+  ) {
+    const { method, amount, purpose } = dto;
 
-    const exists = await this.paymentModel.findOne({
-      transactionId: dto.transactionId,
-    });
+    const year = new Date().getFullYear().toString().slice(-2);
+    const randomNum = Math.floor(100000 + Math.random() * 900000);
+    const date = new Date().getDate().toString().padStart(2, '0');
+    const transactionId = `TXN${year}${randomNum}${date}`;
 
-    if (exists) {
-      throw new BadRequestException('Transaction already used');
-    }
+    const user = await this.userService.findUserById(userId);
 
+    // 🔥 CREATE PAYMENT RECORD FIRST
     const payment = await this.paymentModel.create({
       userId,
-      amount: dto.amount,
-      method: dto.method,
-      purpose: dto.purpose,
-      transactionId: dto.transactionId,
-      status: PaymentStatus.PENDING,
-      senderNumber: dto.senderNumber,
+      amount,
+      method,
+      purpose,
+      transactionId,
+      paymentStatus: PaymentStatus.INITIATED,
     });
 
- 
-
-    return {
-      message:
-        'Payment initiated successfully. Waiting for admin confirmation.',
+    const payload = {
+      user,
+      userId,
+      amount,
+      purpose,
+      transactionId,
       paymentId: payment._id,
     };
-  }
 
-  // ===============================
-  // ADMIN → APPROVE PAYMENT
-  // ===============================
-  async approvePayment(paymentId: string, adminId: Types.ObjectId) {
-    const session = await this.connection.startSession();
-    session.startTransaction();
+    switch (method) {
+      case PaymentMethod.STRIPE:
+        const stripeResult = await this.stripeGateway.createPayment(payload);
+        return stripeResult.checkoutUrl;
 
-    try {
-      const payment = await this.paymentModel
-        .findById(paymentId)
-        .session(session);
+      case PaymentMethod.SSLCOMMERZ:
+        const result = await this.sslGateway.createPayment(payload);
+        return result.gatewayUrl;
 
-      if (!payment) {
-        throw new NotFoundException('Payment not found');
-      }
-
-      if (payment.status !== PaymentStatus.PENDING) {
-        throw new BadRequestException('Payment already processed');
-      }
-
-      // 🔢 Get last balance
-      const lastTx = await this.fundModel
-        .findOne()
-        .sort({ createdAt: -1 })
-        .session(session);
-
-      const previousBalance = lastTx?.balanceSnapshot || 0;
-      const newBalance = previousBalance + payment.amount;
-
-      // 🧾 Generate invoice
-      const invoiceNumber = this.generateInvoiceNumber();
-
-      // ✅ Update payment
-      payment.status = PaymentStatus.PAID;
-      payment.paidAt = new Date();
-      payment.invoiceNumber = invoiceNumber;
-      await payment.save({ session });
-
-      // 💰 Create fund transaction
-      await this.fundModel.create(
-        [
-          {
-            type: TransactionType.INCOME,
-            amount: payment.amount,
-            reason: `Payment approved (${payment.purpose})`,
-            balanceSnapshot: newBalance,
-            paymentId: payment._id,
-            createdBy: adminId,
-          },
-        ],
-        { session },
-      );
-
-      // 👤 ACTIVATE USER (🔥 NEW PART)
-      await this.userModel.updateOne(
-        { _id: payment.userId },
-        { $set: { status: UserStatus.ACTIVE, role: UserRole.MEMBER } },
-        { session },
-      );
-
-      await session.commitTransaction();
-      session.endSession();
-
-      return {
-        message: 'Payment approved successfully',
-        invoiceNumber,
-        balance: newBalance,
-      };
-    } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-      throw error;
+      default:
+        throw new Error('Unsupported payment method');
     }
   }
+    
+  async getUserPayments(userId: string, query: any) {
+    const { status, page = 1, limit = 10 } = query || {};
+    const filter: any = { userId };
 
-  async getPayments(query: any) {
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      search,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = query;
+    if (status && status !== "ALL") {
+      filter.paymentStatus = status;
+    }
 
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.paymentModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      this.paymentModel.countDocuments(filter).exec(),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+    
+  async getAllPayments(query: any) {
+    const { status, search, page = 1, limit = 10 } = query || {};
     const filter: any = {};
 
-    if (status) {
-      filter.status = status;
+    if (status && status !== "ALL") {
+      filter.paymentStatus = status;
     }
 
-    // 🔍 search by name, email, phone (user)
     if (search) {
+      // search by transactionId or other fields if needed
       filter.$or = [
-        { 'userId.name': { $regex: search, $options: 'i' } },
-        { 'userId.email': { $regex: search, $options: 'i' } },
-        { 'userId.phone': { $regex: search, $options: 'i' } },
+        { transactionId: { $regex: search, $options: "i" } },
+        { senderNumber: { $regex: search, $options: "i" } },
       ];
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
+    const skip = (page - 1) * limit;
 
-    const payments = await this.paymentModel
-      .find(filter)
-      .populate('userId', 'name email phone')
-      .populate('approvedBy', 'name role')
-      .populate('rejectedBy', 'name role')
-      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-      .skip(skip)
-      .limit(Number(limit));
-
-    const total = await this.paymentModel.countDocuments(filter);
+    const [data, total] = await Promise.all([
+      this.paymentModel
+        .find(filter)
+        .populate("userId", "name email phone")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      this.paymentModel.countDocuments(filter).exec(),
+    ]);
 
     return {
-      data: payments,
+      data,
       meta: {
         total,
-        page: Number(page),
-        limit: Number(limit),
+        page,
+        limit,
         totalPages: Math.ceil(total / limit),
       },
     };
   }
 
+
+  /**
+   * 🔥 UNIVERSAL POST-PAYMENT PROCESS
+   * Handles user role updates, fund transactions, and payment status.
+   */
+  private async completePaymentProcess(paymentId: string) {
+    const payment = await this.paymentModel.findById(paymentId);
+    if (!payment || payment.paymentStatus === PaymentStatus.PAID) {
+      return;
+    }
+
+    console.log(`[PAYMENT] Processing completion for ${paymentId} (${payment.transactionId})`);
+
+    // 1. Update Payment Record
+    payment.paymentStatus = PaymentStatus.PAID;
+    payment.paidAt = new Date();
+    await payment.save();
+
+    // 2. Fund Injection (Donations)
+    if (payment.purpose === PaymentPurpose.MONTHLY_DONATION || payment.purpose === PaymentPurpose.PROJECT_DONATION) {
+      await this.fundService.addTransactionFromPayment(
+        payment.userId.toString(),
+        payment.amount,
+        payment._id.toString(),
+        payment.transactionId,
+        payment.purpose === PaymentPurpose.MONTHLY_DONATION ? 'Monthly Donation' : 'Project Donation',
+      );
+      console.log(`[PAYMENT] Fund record created for ${payment.transactionId}`);
+    }
+
+    // 3. Authority Elevation (Membership)
+    if (payment.purpose === PaymentPurpose.MEMBERSHIP_FEE) {
+      const user = await this.userModel.findById(payment.userId);
+      if (user) {
+        user.role = UserRole.MEMBER;
+        user.status = UserStatus.ACTIVE;
+        await user.save();
+        console.log(`[PAYMENT] Authority elevated to MEMBER for user: ${user.email}`);
+      } else {
+        console.warn(`[PAYMENT] User not found for role elevation: ${payment.userId}`);
+      }
+    }
+  }
+
+  async handleStripeWebhook(payload: any, signature: string) {
+    const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    const stripeWebhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET',);
+
+    if (!stripeSecretKey || !stripeWebhookSecret) {
+      console.error('[STRIPE] Webhook configuration mismatch.');
+      throw new BadRequestException('Stripe configuration is missing');
+    }
+
+    const stripe = new Stripe(stripeSecretKey);
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(payload, signature, stripeWebhookSecret);
+    } catch (err) {
+      console.error('[STRIPE] Signature verification failed.');
+      throw new BadRequestException('Invalid Stripe signature');
+    }
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const transactionId = session.metadata?.transactionId;
+
+      if (transactionId) {
+        const payment = await this.paymentModel.findOne({ transactionId });
+        if (payment) {
+          await this.completePaymentProcess(payment._id.toString());
+        }
+      }
+    }
+
+    return { received: true };
+  }
+
+  async handleStripeSuccess(sessionId: string) {
+    const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    if (!stripeSecretKey) throw new BadRequestException('Stripe configuration is missing');
+    
+    const stripe = new Stripe(stripeSecretKey);
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status === 'paid') {
+      const transactionId = session.metadata?.transactionId;
+      if (transactionId) {
+        const payment = await this.paymentModel.findOne({ transactionId });
+        if (payment) {
+          await this.completePaymentProcess(payment._id.toString());
+          return { message: 'Payment verified and processed.' };
+        }
+      }
+    }
+    throw new BadRequestException('Payment verification protocol failed.');
+  }
+
+// ===============================
+// SSL SUCCESS
+// ===============================
+async handleSslSuccess(payload: any) {
+  const { tran_id } = payload;
+  const payment = await this.paymentModel.findOne({ transactionId: tran_id });
+
+  if (!payment) throw new BadRequestException('Payment record not found');
+
+  await this.completePaymentProcess(payment._id.toString());
+
+  return {
+    message: payment.purpose === PaymentPurpose.MEMBERSHIP_FEE 
+      ? 'Payment successful & membership activated'
+      : 'Payment successful & fund updated',
+  };
+}
+
   // ===============================
-  // INVOICE GENERATOR
+  // SSL FAIL
   // ===============================
-  private generateInvoiceNumber(): string {
-    const year = new Date().getFullYear();
-    const random = Math.floor(100000 + Math.random() * 900000);
-    return `INV-${year}-${random}`;
+  async handleSslFail(payload: any) {
+    const { tran_id } = payload;
+
+    await this.paymentModel.updateOne(
+      { transactionId: tran_id },
+      { paymentStatus: PaymentStatus.FAILED },
+    );
+
+    return {
+      message: 'Payment failed',
+    };
+  }
+
+  // ===============================
+  // SSL CANCEL
+  // ===============================
+  async handleSslCancel(payload: any) {
+    const { tran_id } = payload;
+
+    await this.paymentModel.updateOne(
+      { transactionId: tran_id },
+      { paymentStatus: PaymentStatus.CANCELLED },
+    );
+
+    return {
+      message: 'Payment cancelled',
+    };
+  }
+
+  // ===============================
+  // SSL IPN (SERVER TO SERVER)
+  // ===============================
+  async handleSslIpn(payload: any) {
+    const { tran_id, status } = payload;
+
+    if (status !== 'VALID') {
+      return { message: 'Invalid IPN' };
+    }
+
+    const payment = await this.paymentModel.findOne({
+      transactionId: tran_id,
+    });
+
+    if (!payment) return;
+
+    payment.paymentStatus = PaymentStatus.PAID;
+    payment.paidAt = new Date();
+    await payment.save();
+
+    return { message: 'IPN processed' };
+  }
+
+  async getPaymentById(id: string, userId: string, role: string) {
+    const payment = await this.paymentModel.findById(id).populate('userId', 'name email phone address cityState avatar');
+    if (!payment) {
+      throw new BadRequestException('Payment not found');
+    }
+
+    // Security: Only the user who made the payment or an Admin can see the invoice
+    if (payment.userId['_id'].toString() !== userId && role !== UserRole.SUPER_ADMIN && role !== UserRole.ADMIN) {
+      throw new BadRequestException('Unauthorized access to invoice');
+    }
+
+    return payment;
   }
 }

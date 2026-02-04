@@ -5,6 +5,8 @@ import {
   Body,
   UseGuards,
   Request,
+  Param,
+  Patch,
   Query,
 } from '@nestjs/common';
 import { FundService } from './fund.service';
@@ -42,7 +44,28 @@ export class FundController {
 
   @Get('history')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
-  getHistory(@Query('limit') limit: number) {
-    return this.fundService.getHistory(limit);
+  getHistory(@Query('page') page: number, @Query('limit') limit: number) {
+    return this.fundService.getHistory(page, limit);
+  }
+
+  // 📝 Get Expense Requests
+  @Get('requests')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  getExpenseRequests(@Query('status') status: any) {
+    return this.fundService.getExpenseRequests(status);
+  }
+
+  // ✅ Approve Expense (Admin verifies, Super Admin finalizes)
+  @Patch('requests/:id/approve')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  approveExpense(@Param('id') id: string, @Request() req) {
+    return this.fundService.approveExpense(id, req.user);
+  }
+
+  // ❌ Reject Expense
+  @Patch('requests/:id/reject')
+  @Roles(UserRole.SUPER_ADMIN)
+  rejectExpense(@Param('id') id: string, @Body('reason') reason: string) {
+    return this.fundService.rejectExpense(id, reason);
   }
 }

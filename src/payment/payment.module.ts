@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { PaymentService } from './payment.service';
+
 import { PaymentController } from './payment.controller';
 import { Payment, PaymentSchema } from './schemas/payment.schema';
-import { SslcommerzService } from './services/sslcommerz.service';
 
 import { User, UserSchema } from '../user/schemas/user.schema';
 import { FundModule } from 'src/fund/fund.module';
@@ -12,6 +11,11 @@ import {
   FundTransactionSchema,
 } from 'src/fund/schemas/fund-transaction.schema';
 import { SocketModule } from 'src/socket/socket.module';
+import { PaymentService } from './payment.service';
+import { StripeGateway } from './getways/stripe/stripe.getway';
+
+import { UserService } from 'src/user/user.service';
+import { SslGateway } from './getways/ssl/ssl.gateway';
 
 @Module({
   imports: [
@@ -21,11 +25,12 @@ import { SocketModule } from 'src/socket/socket.module';
       { name: User.name, schema: UserSchema },
     ]),
     FundModule,
-       SocketModule,
+    SocketModule,
     
+  
   ],
   controllers: [PaymentController],
-  providers: [PaymentService, SslcommerzService],
+  providers: [PaymentService,  SslGateway, StripeGateway, UserService],
   exports: [PaymentService],
 })
 export class PaymentModule {}

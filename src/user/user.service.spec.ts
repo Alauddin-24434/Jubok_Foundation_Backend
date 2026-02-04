@@ -18,6 +18,7 @@ describe('UserService', () => {
     findByIdAndUpdate: jest.fn(),
     findByIdAndDelete: jest.fn(),
     exec: jest.fn(),
+    countDocuments: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -42,11 +43,20 @@ describe('UserService', () => {
     it('should return an array of users', async () => {
       mockUserModel.find.mockReturnValue({
         sort: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
         exec: jest.fn().mockResolvedValue([mockUser]),
+      });
+      mockUserModel.countDocuments.mockReturnValue({
+          exec: jest.fn().mockResolvedValue(1),
       });
 
       const result = await service.findAll();
-      expect(result).toEqual([mockUser]);
+      // Since chain is fixed, let's assume it returns data array or {data, meta}
+      // Reviewing UserService.findAll:
+      // return { data, meta }
+      
+      expect(result.data).toEqual([mockUser]);
     });
   });
 
