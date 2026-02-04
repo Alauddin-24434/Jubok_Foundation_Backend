@@ -61,4 +61,24 @@ export class ProjectController {
   remove(@Param('id') id: string, @Request() req) {
     return this.projectService.remove(id, req.user._id);
   }
+
+  // 👥 MEMBERS
+  @Post(':id/members')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  addMember(@Param('id') id: string, @Body() memberData: any) {
+    return this.projectService.addMember(id, memberData);
+  }
+
+  @Delete(':id/members/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  removeMember(@Param('id') id: string, @Param('userId') userId: string) {
+    return this.projectService.removeMember(id, userId);
+  }
+
+  @Get(':id/members')
+  getMembers(@Param('id') id: string) {
+    return this.projectService.getMembers(id);
+  }
 }

@@ -2,17 +2,13 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 export enum PaymentMethod {
-  CASH = 'CASH',
-  BKASH = 'BKASH',
-  NAGAD = 'NAGAD',
-  BANK = 'BANK',
-  CARD = 'CARD',
+  STRIPE = 'STRIPE',
+  SSLCOMMERZ = 'SSLCOMMERZ',
 }
 
 export enum PaymentStatus {
   INITIATED = 'INITIATED',
   PENDING = 'PENDING',
-
   PAID = 'PAID',
   FAILED = 'FAILED',
   CANCELLED = 'CANCELLED',
@@ -20,10 +16,12 @@ export enum PaymentStatus {
 }
 
 export enum PaymentPurpose {
-  MONTHLY = 'MONTHLY',
-  ACCOUNT_ACTIVATION = 'ACCOUNT_ACTIVATION',
-  ONE_TIME = 'ONE_TIME',
+  MEMBERSHIP_FEE = 'MEMBERSHIP_FEE',
+  MONTHLY_DONATION = 'MONTHLY_DONATION',
+  PROJECT_DONATION = 'PROJECT_DONATION',
 }
+
+
 
 @Schema({ timestamps: true })
 export class Payment extends Document {
@@ -36,38 +34,27 @@ export class Payment extends Document {
   @Prop({ type: String, enum: PaymentMethod, required: true })
   method: PaymentMethod;
 
+
+
+  @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.PENDING })
+  paymentStatus: PaymentStatus;
+
   @Prop({ type: String, enum: PaymentPurpose, required: true })
   purpose: PaymentPurpose;
 
-  @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.PENDING })
-  status: PaymentStatus;
-
   // bkash trx / nagad trx / bank ref / gateway trx
-  @Prop({ trim: true })
-  transactionId?: string;
+  @Prop({ required: true, trim: true })
+  transactionId: string;
 
-  // manual payment sender number
   @Prop({ trim: true })
   senderNumber?: string;
 
   @Prop({ trim: true })
-  invoiceNumber?: string;
-
+  screenshot?: string;
+  
   @Prop()
   paidAt?: Date;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  approvedBy?: Types.ObjectId;
-
-  // ❌ REJECTION INFO (NEW)
-  @Prop({ trim: true })
-  rejectReason?: string;
-
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  rejectedBy?: Types.ObjectId;
-
-  @Prop()
-  approvedAt?: Date;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

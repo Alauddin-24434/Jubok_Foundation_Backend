@@ -5,6 +5,7 @@ import {
   FundTransaction,
   TransactionType,
 } from './schemas/fund-transaction.schema';
+import { ExpenseRequestStatus, ExpenseRequest } from './schemas/expense-request.schema';
 import { BadRequestException } from '@nestjs/common';
 
 describe('FundService', () => {
@@ -46,6 +47,18 @@ describe('FundService', () => {
       ),
   }));
 
+  const mockExpenseRequestModel = jest.fn() as any;
+  mockExpenseRequestModel.mockImplementation(function (data: any) {
+    return {
+      ...data,
+      save: jest.fn().mockResolvedValue({ ...data, status: ExpenseRequestStatus.PENDING }),
+    };
+  });
+  mockExpenseRequestModel.find = jest.fn().mockReturnThis();
+  mockExpenseRequestModel.findById = jest.fn();
+  mockExpenseRequestModel.sort = jest.fn().mockReturnThis();
+
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -53,6 +66,10 @@ describe('FundService', () => {
         {
           provide: getModelToken(FundTransaction.name),
           useValue: mockFundModel,
+        },
+        {
+          provide: getModelToken(ExpenseRequest.name),
+          useValue: mockExpenseRequestModel,
         },
       ],
     }).compile();
@@ -80,27 +97,18 @@ describe('FundService', () => {
       // We focus on the logic patterns.
     });
 
-    it('should throw BadRequestException if balance becomes negative', async () => {
-      mockFundModel.findOne.mockImplementation(() => ({
-        sort: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue({ balanceSnapshot: 50 }),
-        then: jest
-          .fn()
-          .mockImplementation((onFulfilled) =>
-            Promise.resolve({ balanceSnapshot: 50 }).then(onFulfilled),
-          ),
-      }));
-
-      await expect(
-        service.addTransaction(
+    it('should create an expense request for EXPENSE type', async () => {
+      const result = await service.addTransaction(
           {
             type: TransactionType.EXPENSE,
             amount: 100,
             reason: 'test',
           },
           'user1',
-        ),
-      ).rejects.toThrow(BadRequestException);
+        );
+      
+      expect(result).toBeDefined();
+      expect((result as ExpenseRequest).status).toBe(ExpenseRequestStatus.PENDING);
     });
   });
 

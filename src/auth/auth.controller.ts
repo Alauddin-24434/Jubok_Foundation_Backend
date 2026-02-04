@@ -96,17 +96,28 @@ export class AuthController {
   }
 
   /* ================= ME ================= */
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  async me(@ReqDecorator() req: Request) {
-    // console.log('✅ req.user:', req.user);
+ 
+@Get('me')
+@UseGuards(JwtAuthGuard)
+async me(@ReqDecorator() req: Request) {
+  const user = req.user as JwtUser;
+  const refreshToken = (req.cookies as Record<string, string>)?.refreshToken;
 
-    const user = req.user as JwtUser;
-
-    const userId = user._id; // ✅ NO TS ERROR
-
-    return this.authService.me(userId);
+  if (!refreshToken) {
+    throw new UnauthorizedException('Refresh token missing');
   }
+
+  const { accessToken, user: refreshedUser } =
+    await this.authService.refreshAccessToken(refreshToken);
+
+  return {
+    success: true,
+    data: {
+      user: refreshedUser,
+      accessToken,
+    },
+  };
+}
 
   /* ================= REFRESH TOKEN ================= */
   @Post('refresh-token')
@@ -134,25 +145,34 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getStats(@ReqDecorator() req: Request) {
     const user = req.user as JwtUser;
-    if (user.role === 'SuperAdmin' || user.role === 'Admin') {
-      return this.statsService.getAdminStats();
-    }
-    return this.statsService.getUserStats(user._id);
+    const stats =
+      user.role === 'SuperAdmin' || user.role === 'Admin'
+        ? await this.statsService.getAdminStats()
+        : await this.statsService.getUserStats(user._id);
+
+    return {
+      success: true,
+      data: stats,
+    };
   }
 
   /* ================= LOGOUT ================= */
   @Post('logout')
-  @HttpCode(HttpStatus.OK)
-  async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('refreshToken', {
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('accessToken', {
       httpOnly: true,
-      secure: false, // dev → false
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
     });
 
-    return {
-      success: true,
-      message: 'Logged out successfully',
-    };
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    return { message: 'Logged out successfully' };
   }
 }

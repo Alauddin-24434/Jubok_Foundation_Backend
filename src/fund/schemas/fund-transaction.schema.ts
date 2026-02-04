@@ -8,6 +8,10 @@ export enum TransactionType {
 
 @Schema({ timestamps: true })
 export class FundTransaction extends Document {
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId: Types.ObjectId;
+  
   @Prop({ type: String, enum: TransactionType, required: true })
   type: TransactionType;
 
@@ -24,13 +28,15 @@ export class FundTransaction extends Document {
   @Prop({ type: [String], default: [] })
   evidenceImages: string[];
 
-  // 🔗 REAL RELATION WITH PAYMENT
-  @Prop({ type: Types.ObjectId, ref: 'Payment' })
-  paymentId: Types.ObjectId;
+  @Prop({ required: true })
+  transactionId: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  createdBy: Types.ObjectId;
+  // 💳 Reference to payment (if this transaction is from a payment)
+  @Prop({ type: Types.ObjectId, ref: 'Payment' })
+  paymentId?: Types.ObjectId;
+
 }
+
 
 // ✅ CREATE SCHEMA
 export const FundTransactionSchema =

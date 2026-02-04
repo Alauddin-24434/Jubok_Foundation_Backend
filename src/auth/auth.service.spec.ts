@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { User } from '../user/schemas/user.schema';
-import { Payment } from 'src/payment/schemas/payment.schema';
+import { Payment } from '../payment/schemas/payment.schema';
 import { UnauthorizedException } from '@nestjs/common';
 
 describe('AuthService', () => {
@@ -60,7 +60,9 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should return tokens if credentials are valid', async () => {
-      mockUserModel.findOne.mockResolvedValue(mockUser);
+      mockUserModel.findOne.mockReturnValue({
+          select: jest.fn().mockResolvedValue(mockUser)
+      });
       mockUser.comparePassword.mockResolvedValue(true);
 
       const result = await service.login({
@@ -72,7 +74,9 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if user not found', async () => {
-      mockUserModel.findOne.mockResolvedValue(null);
+      mockUserModel.findOne.mockReturnValue({
+          select: jest.fn().mockResolvedValue(null)
+      });
       await expect(
         service.login({ email: 'wrong@example.com', password: 'password' }),
       ).rejects.toThrow(UnauthorizedException);

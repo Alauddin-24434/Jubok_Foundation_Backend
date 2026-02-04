@@ -6,11 +6,14 @@ import { CreateNoticeDto, UpdateNoticeDto } from './dto/create-notice.dto';
 
 import { AppGateway } from 'src/socket/socket.gateway';
 
+import { RedisService } from 'src/redis/redis.service';
+
 @Injectable()
 export class NoticeService {
   constructor(
     @InjectModel(Notice.name)
     private readonly noticeModel: Model<Notice>,
+    private readonly redisService: RedisService,
   ) {}
 
   // ================= CREATE NOTICE =================
@@ -43,6 +46,9 @@ export class NoticeService {
       time: new Date().toISOString(),
     });
 
+    // 🧹 Invalidate Cache
+    await this.redisService.del('notices:all');
+
     return notice;
   }
 
@@ -61,6 +67,10 @@ export class NoticeService {
       time: new Date().toISOString(),
     });
 
+    // 🧹 Invalidate Cache
+    await this.redisService.del(`notices:${id}`);
+    await this.redisService.del('notices:all');
+
     return notice;
   }
 
@@ -78,21 +88,36 @@ export class NoticeService {
       time: new Date().toISOString(),
     });
 
+    // 🧹 Invalidate Cache
+    await this.redisService.del(`notices:${id}`);
+    await this.redisService.del('notices:all');
+
     return { message: 'Notice deleted successfully' };
   }
 
   // ================= GET ALL NOTICES =================
   async findAll() {
-    return this.noticeModel
+    const cached = await this.redisService.get('notices:all');
+    if (cached) return cached;
+
+    const data = await this.noticeModel
       .find()
       .sort({ createdAt: -1 })
       .exec();
+
+    await this.redisService.set('notices:all', data, 600); // 10 mins pass
+    return data;
   }
 
   // ================= GET SINGLE NOTICE =================
   async findOne(id: string) {
+    const cached = await this.redisService.get(`notices:${id}`);
+    if (cached) return cached;
+    
     const notice = await this.noticeModel.findById(id);
     if (!notice) throw new NotFoundException('Notice not found');
+    
+    await this.redisService.set(`notices:${id}`, notice, 600);
     return notice;
   }
 }

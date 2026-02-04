@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -78,10 +79,10 @@ export class AuthService {
       name,
       email,
       password,
-      phone,
-      address,
-      avatar,
-      role: UserRole.GUEST,
+      phone: phone || '',
+      address: address || '',
+      avatar: avatar || '',
+      role: UserRole.USER,
       permissions: [],
     });
 
@@ -105,13 +106,16 @@ export class AuthService {
   /* ================= LOGIN ================= */
 
   async login(loginDto: LoginDto) {
-    console.log('🔐 Login request received');
+    console.log('🔐 Login request received', loginDto);
 
     const { email, password } = loginDto;
     // console.log('📧 Email:', email);
+    if (!password) {
+      throw new BadRequestException('Password is required');
+    }
 
     // 1️⃣ Find user
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userModel.findOne({ email }).select('+password');
     if (!user) {
       // console.log('❌ Login failed: User not found');
       throw new UnauthorizedException('Invalid credentials');
@@ -168,7 +172,7 @@ export class AuthService {
     // 2️⃣ Check activation payment
     const activationPayment = await this.paymentModel.findOne({
       userId,
-      purpose: PaymentPurpose.ACCOUNT_ACTIVATION,
+      // purpose: PaymentPurpose.ACCOUNT_ACTIVATION,
       status: PaymentStatus.PAID,
     });
 

@@ -6,11 +6,16 @@ import {
   FundTransaction,
   FundTransactionSchema,
 } from './schemas/fund-transaction.schema';
+import {
+  ExpenseRequest,
+  ExpenseRequestSchema,
+} from './schemas/expense-request.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: FundTransaction.name, schema: FundTransactionSchema },
+      { name: ExpenseRequest.name, schema: ExpenseRequestSchema },
     ]),
   ],
   controllers: [FundController],
