@@ -13,6 +13,7 @@ import {
 import { SocketModule } from 'src/socket/socket.module';
 import { PaymentService } from './payment.service';
 import { StripeGateway } from './getways/stripe/stripe.getway';
+import { NotificationModule } from '../notification/notification.module';
 
 import { UserService } from 'src/user/user.service';
 import { SslGateway } from './getways/ssl/ssl.gateway';
@@ -26,6 +27,7 @@ import { SslGateway } from './getways/ssl/ssl.gateway';
     ]),
     FundModule,
     SocketModule,
+    NotificationModule,
     
   
   ],

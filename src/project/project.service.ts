@@ -10,12 +10,14 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
 import { RedisService } from 'src/redis/redis.service';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class ProjectService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<Project>,
     private readonly redisService: RedisService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async create(createProjectDto: CreateProjectDto, userId: string) {
@@ -25,8 +27,19 @@ export class ProjectService {
     });
 
     const saved = await project.save();
+    
     // 🧹 Invalidate list cache
     await this.redisService.delPattern('projects:all*');
+
+    // 🛑 SEND GLOBAL NOTIFICATION
+    await this.notificationService.create({
+      title: '🚀 New Project Launched!',
+      message: `A new project "${saved.name}" has been launched. Check it out now!`,
+      type: 'info',
+      recipient: null as any, // Global
+      link: `/projects/${saved._id}`
+    });
+
     return saved;
   }
 

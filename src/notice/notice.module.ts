@@ -5,12 +5,14 @@ import { NoticeService } from './notice.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Notice, NoticeSchema } from './schemas/notice.schemas';
 import { SocketModule } from 'src/socket/socket.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     //  mongodb model register
     MongooseModule.forFeature([{ name: Notice.name, schema: NoticeSchema }]),
-    SocketModule
+    SocketModule,
+    NotificationModule,
   ],
   // route handler
   controllers: [NoticeController],

@@ -18,15 +18,16 @@ export class NotificationService {
     await notification.save();
 
     // Broadcast logic
-    // 1. If recipient is specified, send to that user's room
-    // 2. If no recipient (global), send to all
-    
-    // if (createNotificationDto.recipient) {
-    //    this.appGateway.server.to(createNotificationDto.recipient).emit('receive_notification', notification);
-    // } else {
-    //    this.appGateway.server.emit('receive_notification', notification);
-    // }
-    
+    const recipient = createNotificationDto.recipient;
+
+    if (recipient) {
+      // Send to specific user room
+      this.appGateway.sendUserNotification(recipient.toString(), notification);
+    } else {
+      // Send to all (public notification)
+      AppGateway.sendPublicNotification(notification);
+    }
+
     return notification;
   }
 

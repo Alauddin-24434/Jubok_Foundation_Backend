@@ -15,6 +15,7 @@ import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
 import { User, UserRole, UserStatus } from 'src/user/schemas/user.schema';
 import { FundService } from 'src/fund/fund.service';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class PaymentService {
@@ -28,6 +29,7 @@ export class PaymentService {
      @InjectModel(User.name)
     private readonly userModel: Model<User>,
     private readonly configService: ConfigService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async processPayment(
@@ -175,6 +177,15 @@ export class PaymentService {
         payment.purpose === PaymentPurpose.MONTHLY_DONATION ? 'Monthly Donation' : 'Project Donation',
       );
       console.log(`[PAYMENT] Fund record created for ${payment.transactionId}`);
+
+      // 🛑 SEND NOTIFICATION
+      await this.notificationService.create({
+        title: 'Donation Successful',
+        message: `Thank you! Your donation of ৳${payment.amount} has been received successfully.`,
+        type: 'success',
+        recipient: payment.userId.toString() as any,
+        link: '/dashboard/payments'
+      });
     }
 
     // 3. Authority Elevation (Membership)
@@ -185,6 +196,15 @@ export class PaymentService {
         user.status = UserStatus.ACTIVE;
         await user.save();
         console.log(`[PAYMENT] Authority elevated to MEMBER for user: ${user.email}`);
+
+        // 🛑 SEND NOTIFICATION
+        await this.notificationService.create({
+          title: 'Membership Activated',
+          message: 'Congratulations! Your membership has been activated successfully.',
+          type: 'success',
+          recipient: user._id.toString() as any,
+          link: '/dashboard/settings'
+        });
       } else {
         console.warn(`[PAYMENT] User not found for role elevation: ${payment.userId}`);
       }

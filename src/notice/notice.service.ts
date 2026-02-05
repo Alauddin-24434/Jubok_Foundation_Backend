@@ -7,6 +7,7 @@ import { CreateNoticeDto, UpdateNoticeDto } from './dto/create-notice.dto';
 import { AppGateway } from 'src/socket/socket.gateway';
 
 import { RedisService } from 'src/redis/redis.service';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class NoticeService {
@@ -14,6 +15,7 @@ export class NoticeService {
     @InjectModel(Notice.name)
     private readonly noticeModel: Model<Notice>,
     private readonly redisService: RedisService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   // ================= CREATE NOTICE =================
@@ -39,11 +41,13 @@ export class NoticeService {
       submitBy: userId,
     });
 
-    AppGateway.sendPublicNotification({
-      message: `New notice created: ${notice.title}`,
-      type: 'NOTICE_CREATED',
-      link: `/dashboard/notices`,
-      time: new Date().toISOString(),
+    // 🛑 SEND PERSISTENT NOTIFICATION
+    await this.notificationService.create({
+      title: '📢 New Notice Posted',
+      message: notice.title,
+      type: 'info',
+      recipient: null as any,
+      link: '/dashboard/notices'
     });
 
     // 🧹 Invalidate Cache
@@ -61,10 +65,10 @@ export class NoticeService {
     await notice.save();
 
     AppGateway.sendPublicNotification({
-      message: `Notice updated: ${notice.title}`,
-      type: 'NOTICE_UPDATED',
+      title: 'Notice Updated',
+      message: notice.title,
+      type: 'info',
       link: `/dashboard/notices`,
-      time: new Date().toISOString(),
     });
 
     // 🧹 Invalidate Cache
@@ -82,10 +86,10 @@ export class NoticeService {
     await this.noticeModel.deleteOne({ _id: id });
 
     AppGateway.sendPublicNotification({
-      message: `Notice deleted: ${notice.title}`,
-      type: 'NOTICE_DELETED',
+      title: 'Notice Removed',
+      message: notice.title,
+      type: 'warning',
       link: `/dashboard/notices`,
-      time: new Date().toISOString(),
     });
 
     // 🧹 Invalidate Cache
